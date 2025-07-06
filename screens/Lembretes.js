@@ -1,5 +1,5 @@
-import React, { useContext, useState } from 'react';
-import Texto from '../components/Texto';
+import React, { useContext, useState } from "react";
+import Texto from "../components/Texto";
 import {
   View,
   FlatList,
@@ -11,15 +11,15 @@ import {
   Image,
   Dimensions,
   Platform,
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { LembretesContext } from '../components/LembretesContext';
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { LembretesContext } from "../components/LembretesContext";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 function formatarData(data) {
-  const dia = data.getDate().toString().padStart(2, '0');
-  const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+  const dia = data.getDate().toString().padStart(2, "0");
+  const mes = (data.getMonth() + 1).toString().padStart(2, "0");
   const ano = data.getFullYear();
   return `${dia}/${mes}/${ano}`;
 }
@@ -29,7 +29,7 @@ export default function LembretesScreen({ navigation }) {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editarIndex, setEditarIndex] = useState(null);
-  const [tituloInput, setTituloInput] = useState('');
+  const [tituloInput, setTituloInput] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [dataInput, setDataInput] = useState(formatarData(new Date()));
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
@@ -42,7 +42,7 @@ export default function LembretesScreen({ navigation }) {
       setDataSelecionada(new Date(lembretes[index].data));
     } else {
       setEditarIndex(null);
-      setTituloInput('');
+      setTituloInput("");
       const hoje = new Date();
       setDataSelecionada(hoje);
       setDataInput(formatarData(hoje));
@@ -53,7 +53,7 @@ export default function LembretesScreen({ navigation }) {
 
   const salvarLembrete = () => {
     if (!tituloInput.trim() || !dataInput.trim()) {
-      Alert.alert('Erro', 'Preencha título e data.');
+      Alert.alert("Erro", "Preencha título e data.");
       return;
     }
 
@@ -69,17 +69,21 @@ export default function LembretesScreen({ navigation }) {
   };
 
   const removerLembrete = (index) => {
-    Alert.alert('Confirmar remoção', 'Deseja realmente remover este lembrete?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => {
-          const novosLembretes = lembretes.filter((_, i) => i !== index);
-          setLembretes(novosLembretes);
+    Alert.alert(
+      "Confirmar remoção",
+      "Deseja realmente remover este lembrete?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Remover",
+          style: "destructive",
+          onPress: () => {
+            const novosLembretes = lembretes.filter((_, i) => i !== index);
+            setLembretes(novosLembretes);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const abrirDatePicker = () => {
@@ -87,7 +91,7 @@ export default function LembretesScreen({ navigation }) {
   };
 
   const aoSelecionarData = (event, selectedDate) => {
-    setMostrarDatePicker(Platform.OS === 'ios'); // No iOS pode deixar aberto até o usuário fechar
+    setMostrarDatePicker(Platform.OS === "ios"); // No iOS pode deixar aberto até o usuário fechar
     if (selectedDate) {
       setDataSelecionada(selectedDate);
       setDataInput(formatarData(selectedDate));
@@ -97,246 +101,310 @@ export default function LembretesScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.botaoVoltar} onPress={() => navigation.navigate('Inicial')}>
-          <Image source={require('../assets/voltar.png')} style={styles.iconeVoltar} />
+        <TouchableOpacity
+          style={styles.botaoVoltar}
+          onPress={() => navigation.navigate("Inicial")}
+        >
+          <Image
+            source={require("../assets/voltar.png")}
+            style={styles.iconeVoltar}
+          />
         </TouchableOpacity>
         <Texto style={styles.titulo}>Lembretes</Texto>
         <View style={styles.espacoVazio} />
       </View>
-
-      <FlatList
-        data={lembretes}
-        keyExtractor={(_, index) => index.toString()}
-        style={styles.lista}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Texto style={styles.emptyText}>Nenhum lembrete registrado</Texto>
-          </View>
-        }
-        renderItem={({ item, index }) => (
-          <View style={styles.lembreteItem}>
-            <View style={styles.lembreteInfo}>
-              <Texto style={styles.lembreteTitulo} numberOfLines={2}>{item.titulo}</Texto>
-              <Texto style={styles.lembreteData}>{item.data}</Texto>
+      <View style={styles.conteudo}>
+        <FlatList
+          data={lembretes}
+          keyExtractor={(_, index) => index.toString()}
+          style={styles.lista}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Texto style={styles.emptyText}>Nenhum lembrete registrado</Texto>
             </View>
-            <View style={styles.botoesContainer}>
-              <TouchableOpacity style={[styles.botaoAcao, styles.botaoEditar]} onPress={() => abrirModal(index)}>
-                <Texto style={styles.botaoAcaoTexto}>✏️</Texto>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.botaoAcao, styles.botaoRemover]} onPress={() => removerLembrete(index)}>
-                <Texto style={styles.botaoAcaoTexto}>🗑️</Texto>
-              </TouchableOpacity>
+          }
+          renderItem={({ item, index }) => (
+            <View style={styles.lembreteItem}>
+              <View style={styles.lembreteInfo}>
+                <Texto style={styles.lembreteTitulo} numberOfLines={2}>
+                  {item.titulo}
+                </Texto>
+                <Texto style={styles.lembreteData}>{item.data}</Texto>
+              </View>
+              <View style={styles.botoesContainer}>
+                <TouchableOpacity
+                  style={[styles.botaoAcao, styles.botaoEditar]}
+                  onPress={() => abrirModal(index)}
+                >
+                  <Texto style={styles.botaoAcaoTexto}>✏️</Texto>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.botaoAcao, styles.botaoRemover]}
+                  onPress={() => removerLembrete(index)}
+                >
+                  <Texto style={styles.botaoAcaoTexto}>🗑️</Texto>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
-      />
+          )}
+        />
 
-      <TouchableOpacity style={styles.botaoNovo} onPress={() => abrirModal()}>
-        <Texto style={styles.botaoTexto}>+ Novo Lembrete</Texto>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.botaoNovo} onPress={() => abrirModal()}>
+          <Texto style={styles.botaoTexto}>+ Novo Lembrete</Texto>
+        </TouchableOpacity>
 
-      <Modal visible={modalVisible} animationType="fade" transparent={true}>
-        <View style={styles.modalFundo}>
-          <View style={styles.modalContainer}>
-            <Texto style={styles.modalTitulo}>{editarIndex !== null ? 'Editar Lembrete' : 'Novo Lembrete'}</Texto>
-
-            <Texto style={styles.label}>Título</Texto>
-            <TextInput
-              placeholder="Digite o título do lembrete"
-              placeholderTextColor="#cfcfcf"
-              value={tituloInput}
-              onChangeText={setTituloInput}
-              style={styles.input}
-            />
-
-            <Texto style={styles.label}>Data</Texto>
-            <TouchableOpacity onPress={abrirDatePicker} style={styles.input}>
-              <Texto style={{ color: dataInput ? '#fff' : '#cfcfcf' }}>
-                {dataInput || 'Selecionar data'}
+        <Modal visible={modalVisible} animationType="fade" transparent={true}>
+          <View style={styles.modalFundo}>
+            <View style={styles.modalContainer}>
+              <Texto style={styles.modalTitulo}>
+                {editarIndex !== null ? "Editar Lembrete" : "Novo Lembrete"}
               </Texto>
-            </TouchableOpacity>
 
-            {mostrarDatePicker && (
-              <DateTimePicker
-                value={dataSelecionada}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={aoSelecionarData}
+              <Texto style={styles.label}>Título</Texto>
+              <TextInput
+                style={styles.input}
+                placeholder="Digite o título do lembrete"
+                placeholderTextColor="#cfcfcf"
+                value={tituloInput}
+                onChangeText={setTituloInput}
               />
-            )}
 
-            <View style={styles.modalBotoes}>
-              <TouchableOpacity style={[styles.botao, styles.botaoCancelar]} onPress={() => setModalVisible(false)}>
-                <Texto style={styles.botaoTexto}>Cancelar</Texto>
+              <Texto style={styles.label}>Data</Texto>
+              <TouchableOpacity
+                onPress={abrirDatePicker}
+                style={styles.inputData}
+              >
+                <Texto style={{ color: dataInput ? "#fff" : "#cfcfcf" }}>
+                  {dataInput || "Selecionar data"}
+                </Texto>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.botao} onPress={salvarLembrete}>
-                <Texto style={styles.botaoTexto}>Salvar</Texto>
-              </TouchableOpacity>
+
+              {mostrarDatePicker && (
+                <DateTimePicker
+                  value={dataSelecionada}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={aoSelecionarData}
+                />
+              )}
+
+              <View style={styles.modalBotoes}>
+                <TouchableOpacity
+                  style={[styles.botao, styles.botaoCancelar]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Texto style={styles.botaoTexto}>Cancelar</Texto>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.botao} onPress={salvarLembrete}>
+                  <Texto style={styles.botaoTexto}>Salvar</Texto>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </View>
   );
 }
 
+//lembretes.js
+//lembretes.js
+//lembretes.js
+//lembretes.js
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E21',
-    padding: 20,
+    backgroundColor: "#0A0E21",
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
+  conteudo: {
+    flex: 1,
+    paddingTop: 20,
+  },
+
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    position: "relative",
   },
+
   botaoVoltar: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    left: 3,
+    zIndex: 1,
   },
-  iconeVoltar: {
-    width: 24,
-    height: 24,
-    tintColor: '#FFF',
-  },
+
   titulo: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
+    color: "#FFF",
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
   },
-  espacoVazio: {
-    width: 40,
+
+  iconeVoltar: {
+    width: 27,
+    height: 27,
+    resizeMode: "contain",
   },
-  botaoNovo: {
-    backgroundColor: '#0B49C1',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  botaoTexto: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+
   lista: {
     flex: 1,
+    marginTop: 20,
   },
+
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 50,
   },
+
   emptyText: {
-    color: '#AAB1C4',
+    color: "#cfcfcf",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
+
   lembreteItem: {
-    backgroundColor: '#1c2337',
-    padding: 16,
+    backgroundColor: "#1c2337",
+    padding: 15,
     borderRadius: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
+
   lembreteInfo: {
     flex: 1,
-    marginRight: 12,
   },
+
   lembreteTitulo: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
   },
+
   lembreteData: {
-    color: '#AAB1C4',
+    color: "#cfcfcf",
     fontSize: 14,
   },
+
   botoesContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
+
   botaoAcao: {
-    padding: 8,
-    borderRadius: 12,
-    width: 40,
-    alignItems: 'center',
+    width: 35,
+    height: 35,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
+
   botaoEditar: {
-    backgroundColor: '#0B49C1',
+    backgroundColor: "#0B49C1",
   },
+
   botaoRemover: {
-    backgroundColor: '#C10B0B',
+    backgroundColor: "#dc3545",
   },
+
   botaoAcaoTexto: {
-    color: '#fff',
     fontSize: 16,
   },
-  modalFundo: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  modalContainer: {
-    backgroundColor: '#1c2337',
-    borderRadius: 16,
-    padding: 20,
-    width: width * 0.9,
-    maxWidth: 400,
-  },
-  modalTitulo: {
-    fontSize: 20,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  label: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  input: {
-    backgroundColor: '#0A0E21',
-    color: '#ffffff',
-    fontSize: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 16,
-    marginBottom: 15,
-    justifyContent: 'center',
-  },
-  modalBotoes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 10,
-  },
-  botao: {
-    backgroundColor: '#0B49C1',
+
+  botaoNovo: {
+    backgroundColor: "#0B49C1",
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  botaoTexto: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  modalFundo: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000000aa",
+  },
+
+  modalContainer: {
+    backgroundColor: "#1c2337",
+    padding: 20,
+    borderRadius: 16,
+    width: "90%",
+  },
+
+  modalTitulo: {
+    color: "#fff",
+    fontSize: 20,
+    marginBottom: 15,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+
+  label: {
+    color: "#fff",
+    fontSize: 16,
+    marginBottom: 8,
+    marginTop: 10,
+  },
+
+  input: {
+    backgroundColor: "#373e4f",
+    width: "100%",
+    borderRadius: 16,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: "#ffffff",
+  },
+
+  inputData: {
+    backgroundColor: "#373e4f",
+    borderRadius: 16,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    justifyContent: "center",
+  },
+
+  modalBotoes: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    gap: 10,
+  },
+
+  botao: {
+    backgroundColor: "#0B49C1",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    alignItems: "center",
     flex: 1,
   },
+
   botaoCancelar: {
-    backgroundColor: '#666',
+    backgroundColor: "#373e4f",
   },
 });

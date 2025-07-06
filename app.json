@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
-      }
+      },
+      "package": "com.capibaracocosine.snackf1f93eb797f945c2b31f7489eadc72ad"
     },
     "web": {
       "favicon": "./assets/favicon.png"
