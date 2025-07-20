@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -6,120 +6,124 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-} from 'react-native';
-import Texto from '../components/Texto';
+} from "react-native";
+import Texto from "../components/Texto";
+import { UsuariosContext } from "../components/UsuariosContext";
 
-export default function CadastroScreen() {
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-
+export default function CadastroScreen({ navigation }) {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const { registrarUsuario } = useContext(UsuariosContext);
+  const registrarDados = () => {
+    registrarUsuario({ nome, email, senha });
+    navigation.navigate("Inicial");
+  };
   return (
     <View style={styles.container}>
-      {/* Ícone de ônibus */}
-      {/* <Image source={require('../assets/bus.png')} style={styles.icon} /> */}
-
-      <Texto style={styles.title}>
-        <Texto style={styles.blue}>BUS</Texto>{' '}
-        <Texto style={styles.white}>CONTROL</Texto>
-      </Texto>
-
-      <Texto style={styles.subtitulo}>Criar conta</Texto>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nome"
-        placeholderTextColor="#aaaa"
-        value={nome}
-        onChangeText={setNome}
+      <Image
+        source={require("../assets/logoinicial.png")}
+        style={styles.logo}
       />
+      <View style={styles.content}>
+        <Texto style={styles.subtitulo}>Criar conta</Texto>
 
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
-        placeholderTextColor="#aaaa"
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Nome"
+          placeholderTextColor="#AAB1C4"
+          value={nome}
+          onChangeText={setNome}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor="#aaaa"
-        secureTextEntry
-        value={senha}
-        onChangeText={setSenha}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="E-mail"
+          placeholderTextColor="#AAB1C4"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TouchableOpacity style={styles.botao}>
-        <Texto style={styles.textoBotao}>Registrar</Texto>
-      </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder="Senha"
+          placeholderTextColor="#AAB1C4"
+          secureTextEntry
+          value={senha}
+          onChangeText={setSenha}
+        />
 
-      <Texto style={styles.loginText}>
-        Já tem uma conta? <Texto style={styles.link}>Entrar</Texto>
-      </Texto>
+        <TouchableOpacity style={styles.botao} onPress={() => registrarDados()}>
+          <Texto style={styles.textoBotao}>Registrar</Texto>
+        </TouchableOpacity>
+
+        <Texto style={styles.loginText}>
+          Já tem uma conta? <Texto style={styles.link}>Entrar</Texto>
+        </Texto>
+      </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050a24',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#050a24",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
+    paddingBottom: 100,
   },
-  icon: {
-    width: 50,
-    height: 50,
-    marginBottom: 20,
+  content: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -110,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  logo: {
     marginBottom: 10,
+    resizeMode: "contain",
+    width: 300,
   },
   blue: {
-    color: '#246BFD',
+    color: "#246BFD",
   },
   white: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   subtitulo: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginBottom: 30,
   },
   input: {
-    backgroundColor: '#1c2337',
-    width: '100%',
+    backgroundColor: "#1c2337",
+    width: "100%",
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 20,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginBottom: 28,
-     fontSize: 16,
+    fontSize: 16,
   },
   botao: {
-    backgroundColor: '#246BFD',
+    backgroundColor: "#246BFD",
     paddingVertical: 20,
     borderRadius: 20,
-    width: '100%',
-    alignItems: 'center',
-    
+    width: "100%",
+    alignItems: "center",
   },
   textoBotao: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   loginText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginTop: 20,
     fontSize: 14,
   },
   link: {
-    color: '#246BFD',
-    textDecorationLine: 'underline',
+    color: "#246BFD",
+    textDecorationLine: "underline",
   },
 });

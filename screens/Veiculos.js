@@ -225,7 +225,7 @@ export default function VeiculosScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0A0E21",
+    backgroundColor: "#050a24",
     paddingHorizontal: 20,
     paddingTop: 40,
     paddingBottom: 20,

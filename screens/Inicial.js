@@ -1,7 +1,8 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { VeiculosContext } from '../components/VeiculosContext';
-import { LembretesContext } from '../components/LembretesContext';
-import Texto from '../components/Texto';
+import React, { useContext, useState, useEffect } from "react";
+import { VeiculosContext } from "../components/VeiculosContext";
+import { LembretesContext } from "../components/LembretesContext";
+import { UsuariosContext } from "../components/UsuariosContext";
+import Texto from "../components/Texto";
 import {
   View,
   Text,
@@ -15,38 +16,39 @@ import {
   Dimensions,
   Platform,
   StatusBar,
-} from 'react-native';
-import * as Location from 'expo-location';
+} from "react-native";
+import * as Location from "expo-location"; //importa a localização pra poder usar depois pra exibir na tela
 
-const { width } = Dimensions.get('window');
-const isWeb = Platform.OS === 'web';
+const { width } = Dimensions.get("window");
+const isWeb = Platform.OS === "web";
 
 export default function Inicial({ navigation, route }) {
-  const [nome, setNome] = useState(route.params?.nome || 'Usuário');
-  const [localizacao, setLocalizacao] = useState('Buscando...');
+  const { usuario } = useContext(UsuariosContext);
+  const nomeUsuario = usuario?.nome || "Usuário"; //useState, array que recebe estado atual e função pra alterar, no começo é passado o estado padrão.
+  const [localizacao, setLocalizacao] = useState("Buscando...");
   const [mensalidade, setMensalidade] = useState(380.0);
-  const [saudacao, setSaudacao] = useState('');
+  const [saudacao, setSaudacao] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [novoValorMensalidade, setNovoValorMensalidade] = useState('');
+  const [novoValorMensalidade, setNovoValorMensalidade] = useState("");
 
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
 
-  const abaAtiva = 'Inicial';
+  const abaAtiva = "Inicial";
 
   useEffect(() => {
-    const hora = new Date().getHours();
-    if (hora >= 5 && hora < 12) setSaudacao('Bom dia, ');
-    else if (hora >= 12 && hora < 18) setSaudacao('Boa tarde, ');
-    else setSaudacao('Boa noite, ');
+    const hora = new Date().getHours(); //variavel hora recebe a getHours da função de data
+    if (hora >= 5 && hora < 12) setSaudacao("Bom dia, ");
+    else if (hora >= 12 && hora < 18) setSaudacao("Boa tarde, ");
+    else setSaudacao("Boa noite, ");
   }, []);
 
   useEffect(() => {
     const obterLocalizacao = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setLocalizacao('Permissão negada');
+        if (status !== "granted") {
+          setLocalizacao("Permissão negada");
           return;
         }
 
@@ -54,15 +56,16 @@ export default function Inicial({ navigation, route }) {
         const [address] = await Location.reverseGeocodeAsync(location.coords);
 
         if (address) {
-          const cidade = address.city || address.subregion || 'Cidade desconhecida';
-          const estado = address.region || '';
+          const cidade =
+            address.city || address.subregion || "Cidade desconhecida";
+          const estado = address.region || "";
           setLocalizacao(`${cidade} - ${estado}`);
         } else {
-          setLocalizacao('Local não encontrado');
+          setLocalizacao("Local não encontrado");
         }
       } catch (error) {
-        console.error('Erro ao obter localização:', error);
-        setLocalizacao('Erro ao obter localização');
+        console.error("Erro ao obter localização:", error);
+        setLocalizacao("Erro ao obter localização");
       }
     };
 
@@ -70,7 +73,7 @@ export default function Inicial({ navigation, route }) {
   }, []);
 
   const abrirModalMensalidade = () => {
-    setNovoValorMensalidade('');
+    setNovoValorMensalidade("");
     setModalVisible(true);
   };
 
@@ -80,7 +83,7 @@ export default function Inicial({ navigation, route }) {
       setMensalidade(valor);
       setModalVisible(false);
     } else {
-      Alert.alert('Valor inválido', 'Por favor, insira um número válido.');
+      Alert.alert("Valor inválido", "Por favor, insira um número válido.");
     }
   };
 
@@ -90,10 +93,13 @@ export default function Inicial({ navigation, route }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Image source={require('../assets/logoinicial.png')} style={styles.logo} />
+            <Image
+              source={require("../assets/logoinicial.png")}
+              style={styles.logo}
+            />
             <Texto style={styles.boasVindas}>
               {saudacao}
-              <Texto style={styles.nome}>{nome}</Texto>
+              <Texto style={styles.nome}>{nomeUsuario}</Texto>
             </Texto>
           </View>
 
@@ -106,27 +112,43 @@ export default function Inicial({ navigation, route }) {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={abrirModalMensalidade}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={abrirModalMensalidade}
+            >
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
-                <Texto style={styles.cardTextBold}>Valor atual: R$ {mensalidade.toFixed(2)}</Texto>
+                <Texto style={styles.cardTextBold}>
+                  Valor atual: R$ {mensalidade.toFixed(2)}
+                </Texto> 
                 <Texto style={styles.cardSub}>Toque para editar</Texto>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> 
           </View>
 
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.miniCard} onPress={() => navigation.navigate('Veiculos')}>
+            <TouchableOpacity
+              style={styles.miniCard}
+              onPress={() => navigation.navigate("Veiculos")}
+            >
               <Texto style={styles.cardTitle}>Veículos</Texto>
               {veiculos.length === 0 ? (
                 <Texto style={styles.miniText}>Nenhum veículo registrado</Texto>
               ) : (
-                veiculos.map((v) => (
+                veiculos.slice(0,4).map((v) => (
                   <View key={v.id} style={{ marginBottom: 6 }}>
                     <Texto style={styles.miniText}>
-                      {v.nome.length > 22 ? v.nome.slice(0, 20) + '...' : v.nome}
+                      {v.nome.length > 22 // se a propriedade nome do obj veiculo for maior que 22 caracteres
+                        ? v.nome.slice(0, 20) + "..." // se for, corta até o caractere 20 e add 3 pontos, se nao so mostra o nome inteiro
+                        : v.nome} 
                     </Texto>
-                    <Texto style={v.status === 'Ativo' ? styles.statusAtivo : styles.statusManutencao}>
+                    <Texto
+                      style={
+                        v.status === "Ativo" // se a propriedade veiculo.status ativo for
+                          ? styles.statusAtivo //verdadeiro: o estilo vai ser de ativo
+                          : styles.statusManutencao //falso: o estilo vai ser manutencao
+                      }
+                    >
                       {v.status}
                     </Texto>
                   </View>
@@ -134,17 +156,26 @@ export default function Inicial({ navigation, route }) {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.miniCard} onPress={() => navigation.navigate('Lembretes')}>
+            <TouchableOpacity
+              style={styles.miniCard}
+              onPress={() => navigation.navigate("Lembretes")} // quando apertar em cima vai pra lembretes
+            >
               <Texto style={styles.cardTitle}>Lembretes</Texto>
-              {lembretes.length === 0 ? (
-                <Texto style={styles.miniText}>Nenhum lembrete registrado</Texto>
+              {lembretes.length === 0 ? ( // se o tamanho da lista de lembretes for 0, vai exibir nenhum lembrete registrado
+                <Texto style={styles.miniText}>
+                  Nenhum lembrete registrado
+                </Texto>
               ) : (
-                lembretes.map((l) => (
+                lembretes.slice(0,4).map((l) => ( // o slice limita o card a exibir no max 4 lembretes
                   <View key={l.id} style={{ marginBottom: 6 }}>
                     <Texto style={styles.miniText}>
-                      {l.titulo.length > 22 ? l.titulo.slice(0, 20) + '...' : l.titulo}
+                      {l.titulo.length > 22
+                        ? l.titulo.slice(0, 20) + "..."
+                        : l.titulo}
                     </Texto>
-                    <Texto style={{ color: '#AAB1C4', fontSize: 12 }}>{l.data}</Texto>
+                    <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
+                      {l.data}
+                    </Texto>
                   </View>
                 ))
               )}
@@ -155,29 +186,6 @@ export default function Inicial({ navigation, route }) {
             <Texto style={styles.botaoText}>Nova Viagem</Texto>
           </TouchableOpacity>
         </View>
-
-        {/* Barra de navegação inferior */}
-        <View style={styles.abas}>
-          {[
-            { nome: 'Inicial', icone: '🏠' },
-            { nome: 'Alunos', icone: '👥' },
-            { nome: 'Rota', icone: '🗺️' },
-          ].map((aba) => (
-            <TouchableOpacity
-              key={aba.nome}
-              style={[styles.abaItem, abaAtiva === aba.nome && styles.abaAtiva]}
-              onPress={() => navigation.navigate(aba.nome)}
-            >
-              <Text style={[styles.abaIcon, abaAtiva === aba.nome && styles.abaAtivaTexto]}>
-                {aba.icone}
-              </Text>
-              <Texto style={[styles.abaText, abaAtiva === aba.nome && styles.abaAtivaTexto]}>
-                {aba.nome}
-              </Texto>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
@@ -206,6 +214,37 @@ export default function Inicial({ navigation, route }) {
             </View>
           </View>
         </Modal>
+        {/* Barra de navegação inferior */}
+        <View style={styles.abas}>
+          <TouchableOpacity
+            style={[styles.abaItem, styles.abaAtiva]}
+            accessibilityRole="button"
+            accessibilityLabel="Ir para Início"
+          >
+            <Image source={require("../assets/voltar.png")} style={styles.abaIcon}/>
+            <Texto style={[styles.abaText,  styles.abaAtivaTexto]}>Início</Texto>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.abaItem}
+            onPress={() => navigation.navigate("Alunos")}
+            accessibilityRole="button"
+            accessibilityLabel="Tela de Alunos"
+          >
+          <Image source={require("../assets/alunos.png")} style={styles.abaIcon}/>
+            <Texto style={styles.abaText}>Alunos</Texto>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.abaItem}
+            onPress={() => navigation.navigate("Rota")}
+            accessibilityRole="button"
+            accessibilityLabel="Tela de Rota"
+          >
+           <Image source={require("../assets/rota.png")} style={styles.abaIcon}/>
+            <Texto style={styles.abaText}>Rota</Texto>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </>
   );
@@ -213,156 +252,166 @@ export default function Inicial({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0A0E21',
+    backgroundColor: "#050a24",
     flex: 1,
   },
   content: {
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     flex: 1,
+    paddingTop: 20,
+    paddingBottom:0,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 10,
   },
+  abas: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 15,
+    bottom: 0,
+    paddingHorizontal:15,
+
+    gap: 15
+  },
+  abaItem: {    
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: '#1c2337', 
+    borderRadius: 16,
+    minHeight:60
+  },
+  abaIcon: {
+    width: 27,
+    height: 27,
+    resizeMode: "contain",
+  },
+  abaText: {
+    color: "#AAB1C4",
+    fontSize: 12,
+  },
+  abaAtiva: {
+    backgroundColor: "#0B49C1",
+    borderRadius: 16,
+    minHeight:60
+  },
+  abaAtivaTexto: {
+    color: "white",
+    fontWeight: "bold",
+  },
   logo: {
-    resizeMode: 'contain',
+    resizeMode: "contain",
     width: Math.min(120, width * 0.3),
     height: Math.min(60, width * 0.15),
     marginBottom: 5,
   },
   boasVindas: {
-    color: 'white',
+    color: "white",
     fontSize: width > 768 ? 24 : 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   nome: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   cardsContainer: {
     gap: 12,
     marginTop: 16,
   },
   card: {
-    backgroundColor: '#1C1F2E',
+    backgroundColor: "#1c2337",
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   cardCenterContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   cardTitle: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
     marginBottom: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   cardTextBold: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   cardSub: {
-    color: '#AAB1C4',
+    color: "#AAB1C4",
     fontSize: 12,
     marginTop: 2,
   },
   grid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 8,
     marginVertical: 16,
   },
   miniCard: {
-    backgroundColor: '#1C1F2E',
+    backgroundColor: "#1c2337",
     borderRadius: 16,
     padding: 12,
     flex: 1,
     minHeight: 120,
   },
   miniText: {
-    color: '#AAB1C4',
-    fontSize: 12,
+    color: "#AAB1C4",
+    fontSize: 16,
   },
   statusAtivo: {
-    color: 'limegreen',
+    color: "limegreen",
     fontSize: 12,
   },
   statusManutencao: {
-    color: 'orange',
+    color: "orange",
     fontSize: 12,
   },
   botaoPrincipal: {
-    backgroundColor: '#0B49C1',
-    paddingVertical: 14,
+    backgroundColor: "#0B49C1",
+    paddingVertical: width > 768 ? 20 : 16,
+    paddingHorizontal: 16,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: 20,
     marginBottom: 20,
+    minHeight: width > 768 ? 60 : 50,
   },
   botaoText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: "white",
+    fontSize: width > 768 ? 24 : 20,
+    fontWeight: "bold",
   },
-  abas: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#1C1F2E',
-    borderTopWidth: 1,
-    borderTopColor: '#2A2D3C',
-    paddingVertical: 8,
-  },
-  abaItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  abaIcon: {
-    fontSize: 20,
-    color: 'white',
-    marginBottom: 2,
-  },
-  abaText: {
-    color: '#AAB1C4',
-    fontSize: 12,
-  },
-  abaAtiva: {
-    backgroundColor: '#0B49C1',
-    borderRadius: 12,
-    paddingVertical: 6,
-  },
-  abaAtivaTexto: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
     paddingHorizontal: 20,
   },
   modalContainer: {
-    backgroundColor: '#1C1F2E',
+    backgroundColor: "#1C1F2E",
     borderRadius: 16,
     padding: 20,
   },
   modalTitle: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     padding: 10,
     marginTop: 10,
     fontSize: 18,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 20,
     gap: 10,
   },
@@ -370,15 +419,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   saveButton: {
-    backgroundColor: '#0B49C1',
+    backgroundColor: "#0B49C1",
   },
   modalButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
