@@ -12,7 +12,7 @@
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-navigation/native": "*",
     "@react-navigation/stack": "*",
-    "expo": "~53.0.17",
+    "expo": "53.0.20",
     "expo-font": "~13.3.2",
     "expo-location": "~18.1.6",
     "expo-status-bar": "~2.2.3",

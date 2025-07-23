@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  SafeAreaView,
+
 } from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context"
 import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
 
 export default function VeiculosScreen({ navigation }) {
-  const { veiculos, adicionarVeiculo, editarVeiculo } =
+  const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } =
     useContext(VeiculosContext);
 
   const [nome, setNome] = useState("");
@@ -76,34 +77,51 @@ export default function VeiculosScreen({ navigation }) {
         </TouchableOpacity>
         <Texto style={styles.titulo}>Veículos</Texto>
       </View>
-      
-      <View style={styles.conteudo}>
-        <TouchableOpacity style={styles.botao} onPress={abrirModalAdicionar}>
-          <Texto style={styles.botaoTexto}>Adicionar Veículo</Texto>
-        </TouchableOpacity>
 
+      <View style={styles.conteudo}>
         <FlatList
           data={veiculos}
           keyExtractor={(_, index) => index.toString()}
+          style={styles.lista}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Texto style={styles.emptyText}>Nenhum veículo registrado</Texto>
+            </View>
+          }
           renderItem={({ item, index }) => (
-            <TouchableOpacity
-              style={styles.itemVeiculo}
-              onPress={() => abrirEdicao(index)}
-            >
-              <Texto style={styles.botaoTexto}>{item.nome}</Texto>
-              <Texto style={{ color: "#fff", fontSize: 14 }}>
-                {item.status}
-              </Texto>
-            </TouchableOpacity>
+            <View style={styles.veiculoItem}>
+              <TouchableOpacity
+                style={styles.veiculoInfo}
+                onPress={() => abrirEdicao(index)}
+              >
+                <Texto style={styles.veiculoTitulo} numberOfLines={2}>
+                  {item.nome}
+                </Texto>
+                <Texto style={styles.veiculoStatus}>{item.status}</Texto>
+                </TouchableOpacity>
+
+                <View style={styles.excluirContainer}>
+                <TouchableOpacity
+                  style={styles.botaoRemover}
+                  onPress={() =>removerVeiculo(index)}>
+
+                 <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
+              </TouchableOpacity>
+              </View>
+            </View>
           )}
-        />
+          />
 
         {/* Modal para adicionar veículo */}
-        <Modal visible={modalAdicionarVisivel} animationType="slide" transparent>
+        <Modal
+          visible={modalAdicionarVisivel}
+          animationType="slide"
+          transparent
+        >
           <View style={styles.modalFundo}>
             <View style={styles.modalBox}>
               <Texto style={styles.modalTitulo}>Adicionar Veículo</Texto>
-              
+
               <Texto style={styles.h1}>Nome</Texto>
               <TextInput
                 style={styles.input}
@@ -143,14 +161,17 @@ export default function VeiculosScreen({ navigation }) {
               )}
 
               <View style={styles.botoesModal}>
-                <TouchableOpacity 
-                  style={styles.botaoCancelar} 
+                <TouchableOpacity
+                  style={styles.botaoCancelar}
                   onPress={() => setModalAdicionarVisivel(false)}
                 >
                   <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.botaoModal} onPress={handleAdicionarVeiculo}>
+
+                <TouchableOpacity
+                  style={styles.botaoModal}
+                  onPress={handleAdicionarVeiculo}
+                >
                   <Texto style={styles.botaoModalTexto}>Adicionar</Texto>
                 </TouchableOpacity>
               </View>
@@ -163,7 +184,7 @@ export default function VeiculosScreen({ navigation }) {
           <View style={styles.modalFundo}>
             <View style={styles.modalBox}>
               <Texto style={styles.modalTitulo}>Editar Veículo</Texto>
-              
+
               <Texto style={styles.h1}>Nome</Texto>
               <TextInput
                 style={styles.input}
@@ -180,7 +201,7 @@ export default function VeiculosScreen({ navigation }) {
               >
                 <Texto style={styles.dropdownTexto}>{novoStatus}</Texto>
               </TouchableOpacity>
-              
+
               {editDropdownVisivel && (
                 <View style={styles.dropdownOpcoes}>
                   <TouchableOpacity
@@ -203,20 +224,27 @@ export default function VeiculosScreen({ navigation }) {
               )}
 
               <View style={styles.botoesModal}>
-                <TouchableOpacity 
-                  style={styles.botaoCancelar} 
+                <TouchableOpacity
+                  style={styles.botaoCancelar}
                   onPress={() => setModalEditarVisivel(false)}
                 >
                   <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.botaoModal} onPress={salvarEdicao}>
+
+                <TouchableOpacity
+                  style={styles.botaoModal}
+                  onPress={salvarEdicao}
+                >
                   <Texto style={styles.botaoModalTexto}>Salvar</Texto>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
+
+        <TouchableOpacity style={styles.botao} onPress={abrirModalAdicionar}>
+          <Texto style={styles.botaoTexto}>Adicionar Veículo</Texto>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -227,12 +255,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: -10,
     paddingBottom: 20,
   },
 
   conteudo: {
-    paddingTop: 20,
+    flex: 1,
+    paddingBottom: 10,
   },
 
   header: {
@@ -266,6 +295,10 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
 
+  lista: {
+    flex: 1,
+  },
+
   h1: {
     color: "#FFF",
     fontSize: 18,
@@ -273,7 +306,67 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 10,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+
+  emptyText: {
+    color: "#cfcfcf",
+    fontSize: 16,
+    textAlign: "center",
+  },
+
+  veiculoItem: {
+    backgroundColor: "#1c2337",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  veiculoInfo: {
+    flex: 1,
+  },
+
+  veiculoTitulo: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+
+  veiculoStatus: {
+    color: "#cfcfcf",
+    fontSize: 14,
+  },
+
+  excluirContainer: {
+    flexDirection:"row",
+    gap: 10,
+    marginLeft:20
+  },
   
+  botaoRemover:{
+    width: 70,
+    height: 35,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#c41628ff",
+  },
+
+    botaoAcaoTexto: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#cfcfcf",
+  },
+
+
   input: {
     backgroundColor: "#373e4f",
     width: "100%",
@@ -284,7 +377,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ffffff",
   },
-  
+
   dropdown: {
     width: "100%",
     backgroundColor: "#373e4f",
@@ -292,12 +385,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
   },
-  
+
   dropdownTexto: {
     color: "#ffffff",
     fontSize: 16,
   },
-  
+
   dropdownOpcoes: {
     width: "100%",
     backgroundColor: "#242a39",
@@ -305,7 +398,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
-  
+
   opcaoTexto: {
     color: "#ffffff",
     fontSize: 16,
@@ -321,47 +414,37 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 5,
   },
-  
+
   botao: {
     backgroundColor: "#0B49C1",
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 16,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
     width: "100%",
   },
-  
+
   botaoTexto: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
   },
 
-  itemVeiculo: {
-    alignSelf: "center",
-    backgroundColor: "#1c2337",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    width: "100%",
-    borderRadius: 16,
-    marginTop: 20,
-  },
-  
   modalFundo: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#000000aa",
   },
-  
+
   modalBox: {
     backgroundColor: "#1c2337",
     padding: 20,
     borderRadius: 16,
     width: "90%",
   },
-  
+
   modalTitulo: {
     color: "#fff",
     fontSize: 20,

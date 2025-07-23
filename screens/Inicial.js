@@ -24,8 +24,8 @@ const isWeb = Platform.OS === "web";
 
 export default function Inicial({ navigation, route }) {
   const { usuario } = useContext(UsuariosContext);
-  const nomeUsuario = usuario?.nome || "Usuário"; //useState, array que recebe estado atual e função pra alterar, no começo é passado o estado padrão.
-  const [localizacao, setLocalizacao] = useState("Buscando...");
+  const nomeUsuario = usuario?.nome || "Usuário";
+  const [localizacao, setLocalizacao] = useState("Buscando..."); //useState, array que recebe estado atual e função pra alterar, no começo é passado o estado padrão. OU seja, buscando é o estado padrão e a funcao de alterar muda ela depois.
   const [mensalidade, setMensalidade] = useState(380.0);
   const [saudacao, setSaudacao] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -120,10 +120,10 @@ export default function Inicial({ navigation, route }) {
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
                 <Texto style={styles.cardTextBold}>
                   Valor atual: R$ {mensalidade.toFixed(2)}
-                </Texto> 
+                </Texto>
                 <Texto style={styles.cardSub}>Toque para editar</Texto>
               </View>
-            </TouchableOpacity> 
+            </TouchableOpacity>
           </View>
 
           <View style={styles.grid}>
@@ -135,12 +135,12 @@ export default function Inicial({ navigation, route }) {
               {veiculos.length === 0 ? (
                 <Texto style={styles.miniText}>Nenhum veículo registrado</Texto>
               ) : (
-                veiculos.slice(0,4).map((v) => (
+                veiculos.slice(0, 4).map((v) => (
                   <View key={v.id} style={{ marginBottom: 6 }}>
                     <Texto style={styles.miniText}>
                       {v.nome.length > 22 // se a propriedade nome do obj veiculo for maior que 22 caracteres
                         ? v.nome.slice(0, 20) + "..." // se for, corta até o caractere 20 e add 3 pontos, se nao so mostra o nome inteiro
-                        : v.nome} 
+                        : v.nome}
                     </Texto>
                     <Texto
                       style={
@@ -166,18 +166,22 @@ export default function Inicial({ navigation, route }) {
                   Nenhum lembrete registrado
                 </Texto>
               ) : (
-                lembretes.slice(0,4).map((l) => ( // o slice limita o card a exibir no max 4 lembretes
-                  <View key={l.id} style={{ marginBottom: 6 }}>
-                    <Texto style={styles.miniText}>
-                      {l.titulo.length > 22
-                        ? l.titulo.slice(0, 20) + "..."
-                        : l.titulo}
-                    </Texto>
-                    <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
-                      {l.data}
-                    </Texto>
-                  </View>
-                ))
+                lembretes.slice(0, 4).map(
+                  (
+                    l // o slice limita o card a exibir no max 4 lembretes
+                  ) => (
+                    <View key={l.id} style={{ marginBottom: 6 }}>
+                      <Texto style={styles.miniText}>
+                        {l.titulo.length > 22
+                          ? l.titulo.slice(0, 20) + "..."
+                          : l.titulo}
+                      </Texto>
+                      <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
+                        {l.data}
+                      </Texto>
+                    </View>
+                  )
+                )
               )}
             </TouchableOpacity>
           </View>
@@ -185,6 +189,47 @@ export default function Inicial({ navigation, route }) {
           <TouchableOpacity style={styles.botaoPrincipal}>
             <Texto style={styles.botaoText}>Nova Viagem</Texto>
           </TouchableOpacity>
+          <View style={styles.abas}>
+            <TouchableOpacity
+              style={[styles.abaItem, styles.abaAtiva]}
+              accessibilityRole="button"
+              accessibilityLabel="Ir para Início"
+            >
+              <Image
+                source={require("../assets/voltar.png")}
+                style={styles.abaIcon}
+              />
+              <Texto style={[styles.abaText, styles.abaAtivaTexto]}>
+                Início
+              </Texto>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.abaItem}
+              onPress={() => navigation.navigate("Alunos")}
+              accessibilityRole="button"
+              accessibilityLabel="Tela de Alunos"
+            >
+              <Image
+                source={require("../assets/alunos.png")}
+                style={styles.abaIcon}
+              />
+              <Texto style={styles.abaText}>Alunos</Texto>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.abaItem}
+              onPress={() => navigation.navigate("Rota")}
+              accessibilityRole="button"
+              accessibilityLabel="Tela de Rota"
+            >
+              <Image
+                source={require("../assets/rota.png")}
+                style={styles.abaIcon}
+              />
+              <Texto style={styles.abaText}>Rota</Texto>
+            </TouchableOpacity>
+          </View>
         </View>
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalBackground}>
@@ -193,6 +238,7 @@ export default function Inicial({ navigation, route }) {
               <TextInput
                 style={styles.input}
                 placeholder="Novo valor"
+                placeholderTextColor="#cfcfcf"
                 keyboardType="numeric"
                 value={novoValorMensalidade}
                 onChangeText={setNovoValorMensalidade}
@@ -215,36 +261,6 @@ export default function Inicial({ navigation, route }) {
           </View>
         </Modal>
         {/* Barra de navegação inferior */}
-        <View style={styles.abas}>
-          <TouchableOpacity
-            style={[styles.abaItem, styles.abaAtiva]}
-            accessibilityRole="button"
-            accessibilityLabel="Ir para Início"
-          >
-            <Image source={require("../assets/voltar.png")} style={styles.abaIcon}/>
-            <Texto style={[styles.abaText,  styles.abaAtivaTexto]}>Início</Texto>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Alunos")}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Alunos"
-          >
-          <Image source={require("../assets/alunos.png")} style={styles.abaIcon}/>
-            <Texto style={styles.abaText}>Alunos</Texto>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Rota")}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Rota"
-          >
-           <Image source={require("../assets/rota.png")} style={styles.abaIcon}/>
-            <Texto style={styles.abaText}>Rota</Texto>
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </>
   );
@@ -258,8 +274,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     flex: 1,
-    paddingTop: 20,
-    paddingBottom:0,
+    paddingBottom: 0,
   },
   header: {
     alignItems: "center",
@@ -270,17 +285,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     paddingVertical: 15,
     bottom: 0,
-    paddingHorizontal:15,
-
-    gap: 15
+    marginTop: "auto",
+    gap: 15,
   },
-  abaItem: {    
+  abaItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: '#1c2337', 
+    backgroundColor: "#1c2337",
     borderRadius: 16,
-    minHeight:60
+    minHeight: 60,
   },
   abaIcon: {
     width: 27,
@@ -294,7 +308,7 @@ const styles = StyleSheet.create({
   abaAtiva: {
     backgroundColor: "#0B49C1",
     borderRadius: 16,
-    minHeight:60
+    minHeight: 60,
   },
   abaAtivaTexto: {
     color: "white",
@@ -324,6 +338,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     justifyContent: "center",
+    marginBottom: 5,
   },
   cardCenterContent: {
     alignItems: "center",
@@ -336,26 +351,27 @@ const styles = StyleSheet.create({
   },
   cardTextBold: {
     color: "white",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 2,
   },
   cardSub: {
     color: "#AAB1C4",
-    fontSize: 12,
+    fontSize: 14,
     marginTop: 2,
   },
   grid: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 8,
-    marginVertical: 16,
+    marginVertical: 12,
   },
   miniCard: {
     backgroundColor: "#1c2337",
     borderRadius: 16,
     padding: 12,
     flex: 1,
-    minHeight: 120,
+    minHeight: 250,
   },
   miniText: {
     color: "#AAB1C4",
@@ -404,7 +420,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#373e4f",
+    color: "#fff",
     borderRadius: 8,
     padding: 10,
     marginTop: 10,

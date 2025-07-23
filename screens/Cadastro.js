@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  StatusBar,
+  SafeAreaView,
 } from "react-native";
 import Texto from "../components/Texto";
 import { UsuariosContext } from "../components/UsuariosContext";
@@ -20,7 +22,9 @@ export default function CadastroScreen({ navigation }) {
     navigation.navigate("Inicial");
   };
   return (
-    <View style={styles.container}>
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
+    <SafeAreaView style={styles.container}>
       <Image
         source={require("../assets/logoinicial.png")}
         style={styles.logo}
@@ -61,7 +65,8 @@ export default function CadastroScreen({ navigation }) {
           Já tem uma conta? <Texto style={styles.link}>Entrar</Texto>
         </Texto>
       </View>
-    </View>
+    </SafeAreaView>
+  </>
   );
 }
 const styles = StyleSheet.create({

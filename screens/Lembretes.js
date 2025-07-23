@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LembretesContext } from "../components/LembretesContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -25,7 +26,8 @@ function formatarData(data) {
 }
 
 export default function LembretesScreen({ navigation }) {
-  const { lembretes, setLembretes } = useContext(LembretesContext);
+  const { lembretes, adicionarLembrete, editarLembrete, removerLembrete } =
+    useContext(LembretesContext);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editarIndex, setEditarIndex] = useState(null);
@@ -53,37 +55,18 @@ export default function LembretesScreen({ navigation }) {
 
   const salvarLembrete = () => {
     if (!tituloInput.trim() || !dataInput.trim()) {
+      //se não tiver o título ou não tiver a data, vai exibir erro
       Alert.alert("Erro", "Preencha título e data.");
       return;
     }
 
     if (editarIndex !== null) {
-      const novosLembretes = [...lembretes];
-      novosLembretes[editarIndex] = { titulo: tituloInput, data: dataInput };
-      setLembretes(novosLembretes);
+      editarLembrete(editarIndex, tituloInput, dataInput);
     } else {
-      setLembretes([...lembretes, { titulo: tituloInput, data: dataInput }]);
+      adicionarLembrete(tituloInput, dataInput);
     }
 
     setModalVisible(false);
-  };
-
-  const removerLembrete = (index) => {
-    Alert.alert(
-      "Confirmar remoção",
-      "Deseja realmente remover este lembrete?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Remover",
-          style: "destructive",
-          onPress: () => {
-            const novosLembretes = lembretes.filter((_, i) => i !== index);
-            setLembretes(novosLembretes);
-          },
-        },
-      ]
-    );
   };
 
   const abrirDatePicker = () => {
@@ -99,7 +82,7 @@ export default function LembretesScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -111,8 +94,8 @@ export default function LembretesScreen({ navigation }) {
           />
         </TouchableOpacity>
         <Texto style={styles.titulo}>Lembretes</Texto>
-        <View style={styles.espacoVazio} />
       </View>
+
       <View style={styles.conteudo}>
         <FlatList
           data={lembretes}
@@ -125,24 +108,22 @@ export default function LembretesScreen({ navigation }) {
           }
           renderItem={({ item, index }) => (
             <View style={styles.lembreteItem}>
-              <View style={styles.lembreteInfo}>
+              <TouchableOpacity
+                style={styles.lembreteInfo}
+                onPress={() => abrirModal(index)}
+              >
                 <Texto style={styles.lembreteTitulo} numberOfLines={2}>
                   {item.titulo}
                 </Texto>
                 <Texto style={styles.lembreteData}>{item.data}</Texto>
-              </View>
-              <View style={styles.botoesContainer}>
+              </TouchableOpacity>
+
+              <View style={styles.excluirContainer}>
                 <TouchableOpacity
-                  style={[styles.botaoAcao, styles.botaoEditar]}
-                  onPress={() => abrirModal(index)}
-                >
-                  <Texto style={styles.botaoAcaoTexto}>✏️</Texto>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.botaoAcao, styles.botaoRemover]}
+                  style={styles.botaoRemover}
                   onPress={() => removerLembrete(index)}
                 >
-                  <Texto style={styles.botaoAcaoTexto}>🗑️</Texto>
+                  <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
                 </TouchableOpacity>
               </View>
             </View>
@@ -150,7 +131,7 @@ export default function LembretesScreen({ navigation }) {
         />
 
         <TouchableOpacity style={styles.botaoNovo} onPress={() => abrirModal()}>
-          <Texto style={styles.botaoTexto}>+ Novo Lembrete</Texto>
+          <Texto style={styles.botaoTexto}>Adicionar Lembrete</Texto>
         </TouchableOpacity>
 
         <Modal visible={modalVisible} animationType="fade" transparent={true}>
@@ -203,7 +184,7 @@ export default function LembretesScreen({ navigation }) {
           </View>
         </Modal>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -212,12 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: -10,
     paddingBottom: 20,
   },
   conteudo: {
     flex: 1,
-    paddingTop: 20,
   },
 
   header: {
@@ -226,6 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
     position: "relative",
+    marginBottom: 20,
   },
 
   botaoVoltar: {
@@ -253,14 +234,13 @@ const styles = StyleSheet.create({
 
   lista: {
     flex: 1,
-    marginTop: 20,
   },
 
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 50,
+    marginTop: 20,
   },
 
   emptyText: {
@@ -271,9 +251,10 @@ const styles = StyleSheet.create({
 
   lembreteItem: {
     backgroundColor: "#1c2337",
-    padding: 15,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 16,
-    marginBottom: 10,
+    marginBottom: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -285,7 +266,7 @@ const styles = StyleSheet.create({
 
   lembreteTitulo: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 5,
   },
@@ -295,29 +276,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  botoesContainer: {
+  excluirContainer: {
     flexDirection: "row",
     gap: 10,
+    marginLeft: 20,
   },
 
-  botaoAcao: {
-    width: 35,
+  botaoRemover: {
+    width: 70,
     height: 35,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-  },
-
-  botaoEditar: {
-    backgroundColor: "#0B49C1",
-  },
-
-  botaoRemover: {
-    backgroundColor: "#dc3545",
+    backgroundColor: "#c41628ff",
   },
 
   botaoAcaoTexto: {
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#cfcfcf",
   },
 
   botaoNovo: {
@@ -326,12 +303,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 16,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
+    width: "100%",
   },
 
   botaoTexto: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: "bold",
   },
 

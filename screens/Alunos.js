@@ -9,6 +9,7 @@ import {
   Platform,
   StatusBar,
   Text,
+  FlatList,
   Image,
 } from "react-native";
 import Texto from "../components/Texto";
@@ -31,19 +32,18 @@ export default function AlunosScreen({ navigation }) {
             />
             <Texto style={styles.titulo}>Alunos</Texto>
           </View>
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {alunos.length === 0 && (
+          <FlatList
+            data={alunos}
+            keyExtractor={(item, idx) =>
+              item.id ? String(item.id) : String(idx)
+            }
+            ListEmptyComponent={
               <Texto style={styles.semAlunosTexto}>
                 Nenhum aluno cadastrado.
               </Texto>
-            )}
-
-            {alunos.map((item) => (
-              <View key={item.id} style={styles.card}>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.card}>
                 <TouchableOpacity
                   style={styles.ladoEsquerdo}
                   onPress={() =>
@@ -61,7 +61,6 @@ export default function AlunosScreen({ navigation }) {
                     Status: {item.status || "Pago"}
                   </Texto>
                 </TouchableOpacity>
-
                 <View style={styles.ladoDireito}>
                   <TouchableOpacity
                     style={styles.botaoPequeno}
@@ -75,8 +74,11 @@ export default function AlunosScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
-          </ScrollView>
+            )}
+            contentContainerStyle={{ flexGrow: 1 }}
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+          />
 
           <TouchableOpacity
             style={styles.botao}
@@ -88,7 +90,6 @@ export default function AlunosScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Abas fixas na parte inferior */}
         <View style={styles.abas}>
           <TouchableOpacity
             style={styles.abaItem}
@@ -108,7 +109,10 @@ export default function AlunosScreen({ navigation }) {
             accessibilityRole="button"
             accessibilityLabel="Tela de Alunos"
           >
-            <Image source={require("../assets/alunos.png")} style={styles.abaIcon}/>
+            <Image
+              source={require("../assets/alunos.png")}
+              style={styles.abaIcon}
+            />
             <Texto style={[styles.abaText, styles.abaAtivaTexto]}>Alunos</Texto>
           </TouchableOpacity>
 
@@ -118,7 +122,10 @@ export default function AlunosScreen({ navigation }) {
             accessibilityRole="button"
             accessibilityLabel="Tela de Rota"
           >
-            <Image source={require("../assets/voltar.png")} style={styles.abaIcon}/>
+            <Image
+              source={require("../assets/rota.png")}
+              style={styles.abaIcon}
+            />
             <Texto style={styles.abaText}>Rota</Texto>
           </TouchableOpacity>
         </View>
@@ -135,7 +142,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     flex: 1,
-    paddingTop: 20,
     paddingBottom: 0,
   },
   header: {
@@ -147,17 +153,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     paddingVertical: 15,
     bottom: 0,
-    paddingHorizontal:15,
-
-    gap: 15
+    paddingHorizontal: 15,
+    gap: 15,
+    marginTop: "auto",
   },
-  abaItem: {    
+  abaItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: '#1c2337', 
+    backgroundColor: "#1c2337",
     borderRadius: 16,
-    minHeight:60
+    minHeight: 60,
   },
   abaIcon: {
     width: 27,
@@ -171,7 +177,7 @@ const styles = StyleSheet.create({
   abaAtiva: {
     backgroundColor: "#0B49C1",
     borderRadius: 16,
-    minHeight:60
+    minHeight: 60,
   },
   abaAtivaTexto: {
     color: "white",
@@ -182,9 +188,6 @@ const styles = StyleSheet.create({
     width: Math.min(120, width * 0.3),
     height: Math.min(60, width * 0.15),
     marginBottom: 5,
-  },
-  scrollView: {
-    flex: 1,
   },
   semAlunosTexto: {
     color: "#ccc",
