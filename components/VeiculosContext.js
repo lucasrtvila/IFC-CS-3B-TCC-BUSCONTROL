@@ -1,31 +1,69 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect, use } from "react";
+
+import {
+  initDB,
+  getVeiculos,
+  addVeiculo,
+  updateVeiculo,
+  deleteVeiculo,
+} from "../database/database";
+
 import { Alert } from "react-native";
+
 export const VeiculosContext = createContext();
 
 export function VeiculosProvider({ children }) {
   const [veiculos, setVeiculos] = useState([]);
+  const [dbPronto, setDbPronto] = useState(false);
 
-  const adicionarVeiculo = (nome, status) => {
-    // a função adicionar veiculo vai trabalhar com os parametros nome e status recebidos na sua chamada
-    if (!nome.trim()) return; // se não tiver o nome, nao funciona
-    setVeiculos([...veiculos, { nome: nome.trim(), status }]); //atualiza o usestate com a array que recebe ...veiculos(o que ja tava la) e o novo nome e status.
+  useEffect(() => {
+    (async () => {
+      await initDB();
+      setDbPronto(true);
+      await carregarVeiculos();
+    })();
+  }, []);
+
+  const carregarVeiculos = async () => {
+    const data = await getVeiculos();
+    setVeiculos(data);
   };
 
-  const editarVeiculo = (index, novoNome, novoStatus) => {
-    // a funcao vai pedir o index pra achar o veiculo a ser editado, e pedir pra passar o novo nome e status
-    const atualizados = [...veiculos]; // cria uma nova array atualizados com o que tiver na array veiculos
-    atualizados[index] = { nome: novoNome.trim(), status: novoStatus }; //altera só no index passado ali em cima o nome e o status
-    setVeiculos(atualizados); //o usestate vai receber a array atualizados com os veiculos antigos + o atualizado
+  const adicionarVeiculo = async (nome, status) => {
+    if (!dbPronto) return;
+    if (!nome.trim()) return; // se não tiver o nome, nao funciona
+    try { await addVeiculo(nome.trim(), status);
+    await carregarVeiculos();} catch (e) {
+    console.log("Erro ao adicionar veículo:", e);
+  } //atualiza o usestate com a array que recebe ...veiculos(o que ja tava la) e o novo nome e status.
+  };
+
+  const editarVeiculo = async (index, novoNome, novoStatus) => {
+    if (!dbPronto) return;
+    const veiculo = veiculos[index];
+    if (!veiculo) return;
+    await updateVeiculo(
+      veiculo.id,
+      novoNome.trim(),
+      novoStatus,
+    );
+    await carregarVeiculos(); // atualiza no banco o veiculo e altera a lista
   };
 
   const removerVeiculo = (index) => {
+    if (!dbPronto) return;
+    const veiculo = veiculos[index];
+    if (!veiculo) return;
     Alert.alert("Confirmar remoção", "Deseja realmente remover este veiculo?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Remover",
         style: "destructive",
         onPress: () => {
-          setVeiculos((prev) => prev.filter((_, i) => i !== index));
+          (async () => {
+            await deleteVeiculo(veiculo.id,);
+            await carregarVeiculos(); // remove o veiculo do banco e atualiza a lista
+          })();
         },
       },
     ]);

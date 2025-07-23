@@ -15,24 +15,24 @@ import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
 
 export default function VeiculosScreen({ navigation }) {
-  const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } =
+  const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } = 
     useContext(VeiculosContext);
 
-  const [nome, setNome] = useState("");
-  const [status, setStatus] = useState("Ativo");
-  const [dropdownVisivel, setDropdownVisivel] = useState(false);
+  const [nome, setNome] = useState(""); // estado para o nome do veículo
+  const [status, setStatus] = useState("Ativo"); // estado para o status do veículo, ativo por padrão
+  const [dropdownVisivel, setDropdownVisivel] = useState(false); // estado para controlar a visibilidade do dropdown de status
 
   // Modal para adicionar veículo
   const [modalAdicionarVisivel, setModalAdicionarVisivel] = useState(false);
 
   // Modal para editar veículo
-  const [modalEditarVisivel, setModalEditarVisivel] = useState(false);
-  const [veiculoEditando, setVeiculoEditando] = useState(null);
-  const [novoNome, setNovoNome] = useState("");
-  const [novoStatus, setNovoStatus] = useState("Ativo");
-  const [editDropdownVisivel, setEditDropdownVisivel] = useState(false);
+  const [modalEditarVisivel, setModalEditarVisivel] = useState(false); // estado para controlar a visibilidade do modal de edição 
+  const [veiculoEditando, setVeiculoEditando] = useState(null); // estado para o veículo que está sendo editado
+  const [novoNome, setNovoNome] = useState(""); // estado para o novo nome do veículo
+  const [novoStatus, setNovoStatus] = useState("Ativo"); // estado para o novo status do veículo, ativo por padrão
+  const [editDropdownVisivel, setEditDropdownVisivel] = useState(false); // estado para o dropdown de edição
 
-  const abrirEdicao = (index) => {
+  const abrirEdicao = (index) => { //funcao pra abrir o modal de edicao do veiculo
     const veiculo = veiculos[index];
     setVeiculoEditando(index);
     setNovoNome(veiculo.nome);
@@ -40,13 +40,13 @@ export default function VeiculosScreen({ navigation }) {
     setModalEditarVisivel(true);
   };
 
-  const salvarEdicao = () => {
+  const salvarEdicao = () => {  //funcao pra salvar a edicao do veiculo
     if (!novoNome.trim()) return;
     editarVeiculo(veiculoEditando, novoNome, novoStatus);
     setModalEditarVisivel(false);
   };
 
-  const handleAdicionarVeiculo = () => {
+  const handleAdicionarVeiculo = () => { //funcao pra adicionar veiculo
     if (!nome.trim()) return;
     adicionarVeiculo(nome, status);
     setNome("");
@@ -54,7 +54,7 @@ export default function VeiculosScreen({ navigation }) {
     setModalAdicionarVisivel(false);
   };
 
-  const abrirModalAdicionar = () => {
+  const abrirModalAdicionar = () => { //funcao pra abrir o modal de adicionar veiculo
     setNome("");
     setStatus("Ativo");
     setDropdownVisivel(false);
@@ -113,7 +113,7 @@ export default function VeiculosScreen({ navigation }) {
           />
 
         {/* Modal para adicionar veículo */}
-        <Modal
+        <Modal 
           visible={modalAdicionarVisivel}
           animationType="slide"
           transparent

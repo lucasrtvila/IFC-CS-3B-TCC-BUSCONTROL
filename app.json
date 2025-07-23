@@ -4,7 +4,6 @@
     "slug": "snack-f1f93eb7-97f9-45c2-b31f-7489eadc72ad",
     "version": "1.0.0",
     "orientation": "portrait",
-
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -16,19 +15,19 @@
     },
     "android": {
       "adaptiveIcon": {
-
         "backgroundColor": "#000000"
       },
       "package": "com.capibaracocosine.snackf1f93eb797f945c2b31f7489eadc72ad"
     },
-    "web": {
-
-    },
+    "web": {},
     "extra": {
       "eas": {
         "projectId": "dc4432c9-f128-4f7d-a14f-ea629a27f3d3"
       }
     },
-    "owner": "capibaracocosine"
+    "owner": "capibaracocosine",
+    "plugins": [
+      "expo-sqlite"
+    ]
   }
 }
