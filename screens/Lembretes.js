@@ -211,12 +211,12 @@ const styles = StyleSheet.create({
 
   botaoVoltar: {
     width: 40,
-    height: 40,
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
     left: 3,
-    zIndex: 1,
+    zIndex: 2,
+    marginTop: 30,
   },
 
   titulo: {
