@@ -12,14 +12,14 @@ import {
   Alert,
   TextInput,
   Modal,
-  SafeAreaView,
   Dimensions,
   Platform,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location"; //importa a localização pra poder usar depois pra exibir na tela
 
-const { width } = Dimensions.get("window");
+const { height, width } = Dimensions.get("window");
 const isWeb = Platform.OS === "web";
 
 export default function Inicial({ navigation, route }) {
@@ -90,7 +90,10 @@ export default function Inicial({ navigation, route }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+        edges={["bottom", "left", "right", "top"]}
+      >
         <View style={styles.content}>
           <View style={styles.header}>
             <Image
@@ -185,52 +188,11 @@ export default function Inicial({ navigation, route }) {
               )}
             </TouchableOpacity>
           </View>
-
           <TouchableOpacity style={styles.botaoPrincipal}>
             <Texto style={styles.botaoText}>Nova Viagem</Texto>
           </TouchableOpacity>
-          <View style={styles.abas}>
-            <TouchableOpacity
-              style={[styles.abaItem, styles.abaAtiva]}
-              accessibilityRole="button"
-              accessibilityLabel="Ir para Início"
-            >
-              <Image
-                source={require("../assets/voltar.png")}
-                style={styles.abaIcon}
-              />
-              <Texto style={[styles.abaText, styles.abaAtivaTexto]}>
-                Início
-              </Texto>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.abaItem}
-              onPress={() => navigation.navigate("Alunos")}
-              accessibilityRole="button"
-              accessibilityLabel="Tela de Alunos"
-            >
-              <Image
-                source={require("../assets/alunos.png")}
-                style={styles.abaIcon}
-              />
-              <Texto style={styles.abaText}>Alunos</Texto>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.abaItem}
-              onPress={() => navigation.navigate("Rota")}
-              accessibilityRole="button"
-              accessibilityLabel="Tela de Rota"
-            >
-              <Image
-                source={require("../assets/rota.png")}
-                style={styles.abaIcon}
-              />
-              <Texto style={styles.abaText}>Rota</Texto>
-            </TouchableOpacity>
-          </View>
         </View>
+
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
@@ -261,6 +223,45 @@ export default function Inicial({ navigation, route }) {
           </View>
         </Modal>
         {/* Barra de navegação inferior */}
+        <View style={styles.abas}>
+          <TouchableOpacity
+            style={[styles.abaItem, styles.abaAtiva]}
+            accessibilityRole="button"
+            accessibilityLabel="Ir para Início"
+          >
+            <Image
+              source={require("../assets/voltar.png")}
+              style={styles.abaIcon}
+            />
+            <Texto style={[styles.abaText, styles.abaAtivaTexto]}>Início</Texto>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.abaItem}
+            onPress={() => navigation.navigate("Alunos")}
+            accessibilityRole="button"
+            accessibilityLabel="Tela de Alunos"
+          >
+            <Image
+              source={require("../assets/alunos.png")}
+              style={styles.abaIcon}
+            />
+            <Texto style={styles.abaText}>Alunos</Texto>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.abaItem}
+            onPress={() => navigation.navigate("Rota")}
+            accessibilityRole="button"
+            accessibilityLabel="Tela de Rota"
+          >
+            <Image
+              source={require("../assets/rota.png")}
+              style={styles.abaIcon}
+            />
+            <Texto style={styles.abaText}>Rota</Texto>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </>
   );
@@ -275,6 +276,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     flex: 1,
     paddingBottom: 0,
+    minHeight: height - 120,
   },
   header: {
     alignItems: "center",
@@ -284,9 +286,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 15,
-    bottom: 0,
+    paddingHorizontal: 15,
     marginTop: "auto",
     gap: 15,
+    //bottom: 0,
   },
   abaItem: {
     flex: 1,

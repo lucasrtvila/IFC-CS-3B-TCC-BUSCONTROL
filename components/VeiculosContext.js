@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, use } from "react";
+import { createContext, useState, useEffect,} from "react";
 
 import {
   initDB,
@@ -16,21 +16,26 @@ export function VeiculosProvider({ children }) {
   const [veiculos, setVeiculos] = useState([]);
   const [dbPronto, setDbPronto] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      await initDB();
-      setDbPronto(true);
-      await carregarVeiculos();
-    })();
-  }, []);
+useEffect(() => {
+  (async () => {
+    await initDB();
+    setDbPronto(true);
+    await carregarVeiculos();
+  })();
+}, []);
 
-  const carregarVeiculos = async () => {
+const carregarVeiculos = async () => {
+  try {
     const data = await getVeiculos();
     setVeiculos(data);
-  };
+  } catch (error) {
+    console.log('Erro ao carregar veículos:', error);
+  }
+};
 
   const adicionarVeiculo = async (nome, status) => {
-    if (!dbPronto) return;
+    if (!dbPronto) 
+      return;
     if (!nome.trim()) return; // se não tiver o nome, nao funciona
     try { await addVeiculo(nome.trim(), status);
     await carregarVeiculos();} catch (e) {
@@ -70,9 +75,7 @@ export function VeiculosProvider({ children }) {
   };
 
   return (
-    <VeiculosContext.Provider
-      value={{ veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo }}
-    >
+    <VeiculosContext.Provider value={{ veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo }}>
       {children}
     </VeiculosContext.Provider> //tudo que estiver dentro do provider vai poder usar a variavel veiculos e as funcoes pra adicionar e editar eles
   );

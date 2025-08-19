@@ -75,7 +75,7 @@ export default function VeiculosScreen({ navigation }) {
             style={styles.imagemVoltar}
           />
         </TouchableOpacity>
-        <Texto style={styles.titulo}>Veículos</Texto>
+        <Texto style={styles.titulo}>veículos</Texto>
       </View>
 
       <View style={styles.conteudo}>

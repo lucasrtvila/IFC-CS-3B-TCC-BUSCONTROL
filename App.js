@@ -1,4 +1,5 @@
 import React from "react";
+import { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
@@ -15,9 +16,23 @@ import { LembretesProvider } from "./components/LembretesContext";
 import { AlunosProvider } from "./components/AlunosContext";
 import { UsuariosProvider } from "./components/UsuariosContext";
 
+import { initDB } from "./database/database"; //
+
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    async function prepararBanco() {
+      try {
+        await initDB();
+        console.log("✅ Banco de dados iniciado com sucesso!");
+      } catch (err) {
+        console.error("Erro ao iniciar o banco:", err);
+      }
+    }
+
+    prepararBanco();
+  }, []);
   const [fontsLoaded] = useFonts({
     Rubik: require("./assets/fonts/Rubik.ttf"),
   });
