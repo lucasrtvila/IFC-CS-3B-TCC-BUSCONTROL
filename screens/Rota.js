@@ -1,134 +1,294 @@
-import React, { useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  Dimensions,
-  Platform,
-  StatusBar,
-  Text,
-  FlatList,
   Image,
+  Dimensions,
+  StatusBar,
+  FlatList,
+  Modal,
+  TextInput,
+  Alert,
+  ScrollView,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
 import Texto from "../components/Texto";
-import { AlunosContext } from "../components/AlunosContext";
+import BarraNavegacao from "../components/BarraNavegacao";
+import { ParadasContext } from "../components/ParadasContext";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-export default function AlunosScreen({ navigation }) {
-  const { alunos } = useContext(AlunosContext);
+export default function RotaScreen({ navigation }) {
+  const { paradas, adicionarParada, removerParada } = useContext(ParadasContext);
+
+  // Estados para o modal de adicionar nova parada
+  const [modalNovaParadaVisivel, setModalNovaParadaVisivel] = useState(false);
+  const [nomeNovaParada, setNomeNovaParada] = useState("");
+  const [horarioNovaParada, setHorarioNovaParada] = useState("");
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Estados para os cards fixos e seu modal de edição
+  const [proximaParada, setProximaParada] = useState({
+    nome: "Vila São João",
+    horario: "7:28",
+  });
+  const [destinoFinal, setDestinoFinal] = useState({
+    nome: "IFC Sombrio",
+    horario: "7:58",
+  });
+  const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
+  const [paradaEmEdicao, setParadaEmEdicao] = useState(null);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoHorario, setNovoHorario] = useState("");
+  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
+
+  const formatarHorario = (date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+  
+  const handleAdicionarParada = () => {
+    if (nomeNovaParada.trim() && horarioNovaParada.trim()) {
+      adicionarParada(nomeNovaParada, horarioNovaParada);
+      setModalNovaParadaVisivel(false);
+      setNomeNovaParada("");
+      setHorarioNovaParada("");
+    } else {
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+    }
+  };
+
+  const abrirModalEdicao = (tipo, dados) => {
+    setParadaEmEdicao(tipo);
+    setNovoNome(dados.nome);
+    setNovoHorario(dados.horario);
+    setModalEdicaoVisivel(true);
+  };
+
+  const salvarEdicao = () => {
+    if (!novoNome.trim() || !novoHorario.trim()) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      return;
+    }
+    if (paradaEmEdicao === "proxima") {
+      setProximaParada({ nome: novoNome, horario: novoHorario });
+    } else if (paradaEmEdicao === "destino") {
+      setDestinoFinal({ nome: novoNome, horario: novoHorario });
+    }
+    setModalEdicaoVisivel(false);
+  };
+
+  const onChangeTime = (event, selectedDate) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setHorarioNovaParada(formatarHorario(selectedDate));
+    }
+  };
+  
+  const onChangeEditTime = (event, selectedDate) => {
+    setShowEditTimePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setNovoHorario(formatarHorario(selectedDate));
+    }
+  };
 
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Image
-              source={require("../assets/logoinicial.png")}
-              style={styles.logo}
-            />
-            <Texto style={styles.titulo}>Alunos</Texto>
-          </View>
-          <FlatList
-            data={alunos}
-            keyExtractor={(item, idx) =>
-              item.id ? String(item.id) : String(idx)
-            }
-            ListEmptyComponent={
-              <Texto style={styles.semAlunosTexto}>
-                Nenhum aluno cadastrado.
-              </Texto>
-            }
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <TouchableOpacity
-                  style={styles.ladoEsquerdo}
-                  onPress={() =>
-                    navigation.navigate("DetalhesAluno", { aluno: item })
-                  }
-                  activeOpacity={0.7}
-                >
-                  <Texto style={styles.nome}>{item.nome}</Texto>
-                  <Texto style={styles.ponto}>{item.ponto}</Texto>
-                  <Texto
-                    style={
-                      item.status === "Pago" ? styles.pago : styles.naoPago
-                    }
-                  >
-                    Status: {item.status || "Pago"}
-                  </Texto>
-                </TouchableOpacity>
-                <View style={styles.ladoDireito}>
-                  <TouchableOpacity
-                    style={styles.botaoPequeno}
-                    onPress={() =>
-                      navigation.navigate("DetalhesAluno", { aluno: item })
-                    }
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Editar aluno ${item.nome}`}
-                  >
-                    <Texto style={styles.botaoPequenoTexto}>Editar</Texto>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            contentContainerStyle={{ flexGrow: 1 }}
-            style={styles.scrollView}
-            keyboardShouldPersistTaps="handled"
+        <View style={styles.header}>
+          <Image
+            source={require("../assets/logoinicial.png")}
+            style={styles.logo}
           />
-
           <TouchableOpacity
-            style={styles.botao}
-            onPress={() => navigation.navigate("AdicionarAluno")}
-            activeOpacity={0.8}
-            accessibilityLabel="Adicionar novo aluno"
+            onPress={() => navigation.navigate("Configuracoes")}
           >
-            <Texto style={styles.botaoTexto}>Adicionar Aluno</Texto>
+            <Image
+              source={require("../assets/configuracoes.png")}
+              style={styles.configIcon}
+            />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.abas}>
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Inicial")}
-            accessibilityRole="button"
-            accessibilityLabel="Ir para Início"
-          >
-            <Image
-              source={require("../assets/voltar.png")}
-              style={styles.abaIcon}
-            />
-            <Texto style={styles.abaText}>Início</Texto>
-          </TouchableOpacity>
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.content}>
+            <View style={styles.titleBar}>
+              <Texto style={styles.titulo}>Rota</Texto>
+              <TouchableOpacity
+                style={styles.botaoNovaParada}
+                onPress={() => setModalNovaParadaVisivel(true)}
+              >
+                <Texto style={styles.botaoNovaParadaTexto}>+ Nova Parada</Texto>
+              </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity
-            style={[styles.abaItem, styles.abaAtiva]}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Alunos"
-          >
-            <Image
-              source={require("../assets/alunos.png")}
-              style={styles.abaIcon}
-            />
-            <Texto style={[styles.abaText, styles.abaAtivaTexto]}>Alunos</Texto>
-          </TouchableOpacity>
+            <View style={styles.placeholderContainer}>
+              <Texto style={styles.placeholderText}>
+                O mapa será implementado futuramente.
+              </Texto>
+            </View>
 
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Rota")}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Rota"
-          >
-            <Image
-              source={require("../assets/rota.png")}
-              style={styles.abaIcon}
+            <View style={styles.infoCard}>
+              <View>
+                <Texto style={styles.cardTitle}>Próxima parada</Texto>
+                <Texto style={styles.cardSubtitle}>{proximaParada.nome}</Texto>
+              </View>
+              <View style={styles.cardRight}>
+                <Texto style={styles.cardInfo}>
+                  Chegada: {proximaParada.horario}
+                </Texto>
+                <TouchableOpacity
+                  onPress={() => abrirModalEdicao("proxima", proximaParada)}
+                >
+                  <Texto style={styles.cardEdit}>Editar ✏️</Texto>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.infoCard}>
+              <View>
+                <Texto style={styles.cardTitle}>Destino Final</Texto>
+                <Texto style={styles.cardSubtitle}>{destinoFinal.nome}</Texto>
+              </View>
+              <View style={styles.cardRight}>
+                <Texto style={styles.cardInfo}>
+                  Chegada: {destinoFinal.horario}
+                </Texto>
+                <TouchableOpacity
+                  onPress={() => abrirModalEdicao("destino", destinoFinal)}
+                >
+                  <Texto style={styles.cardEdit}>Editar ✏️</Texto>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {paradas.length > 0 && (
+              <Texto style={styles.listHeader}>Paradas Adicionais</Texto>
+            )}
+            <FlatList
+              data={paradas}
+              keyExtractor={(item) => item.id.toString()}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <View style={styles.infoCard}>
+                  <View>
+                    <Texto style={styles.cardSubtitle}>{item.nome}</Texto>
+                  </View>
+                  <View style={styles.cardRight}>
+                    <Texto style={styles.cardInfo}>
+                      Chegada: {item.horario}
+                    </Texto>
+                    <TouchableOpacity onPress={() => removerParada(item.id)}>
+                      <Texto style={styles.cardEdit}>Excluir 🗑️</Texto>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             />
-            <Texto style={styles.abaText}>Rota</Texto>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </ScrollView>
+
+        <Modal
+          visible={modalNovaParadaVisivel}
+          animationType="slide"
+          transparent
+        >
+          <View style={styles.modalFundo}>
+            <View style={styles.modalBox}>
+              <Texto style={styles.modalTitulo}>Nova Parada</Texto>
+              <TextInput
+                style={styles.input}
+                placeholder="Nome da Parada"
+                placeholderTextColor="#cfcfcf"
+                value={nomeNovaParada}
+                onChangeText={setNomeNovaParada}
+              />
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Texto style={{ color: horarioNovaParada ? "#fff" : "#cfcfcf" }}>
+                  {horarioNovaParada || "Selecionar Horário"}
+                </Texto>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display="default"
+                  onChange={onChangeTime}
+                />
+              )}
+              <View style={styles.botoesModal}>
+                <TouchableOpacity
+                  style={styles.botaoCancelar}
+                  onPress={() => setModalNovaParadaVisivel(false)}
+                >
+                  <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.botaoModal}
+                  onPress={handleAdicionarParada}
+                >
+                  <Texto style={styles.botaoModalTexto}>Adicionar</Texto>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={modalEdicaoVisivel} animationType="slide" transparent>
+          <View style={styles.modalFundo}>
+            <View style={styles.modalBox}>
+              <Texto style={styles.modalTitulo}>Editar Parada</Texto>
+              <TextInput
+                style={styles.input}
+                placeholder="Nome da Parada"
+                placeholderTextColor="#cfcfcf"
+                value={novoNome}
+                onChangeText={setNovoNome}
+              />
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowEditTimePicker(true)}
+              >
+                <Texto style={{ color: novoHorario ? "#fff" : "#cfcfcf" }}>
+                  {novoHorario || "Selecionar Horário"}
+                </Texto>
+              </TouchableOpacity>
+              {showEditTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display="default"
+                  onChange={onChangeEditTime}
+                />
+              )}
+              <View style={styles.botoesModal}>
+                <TouchableOpacity
+                  style={styles.botaoCancelar}
+                  onPress={() => setModalEdicaoVisivel(false)}
+                >
+                  <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.botaoModal}
+                  onPress={salvarEdicao}
+                >
+                  <Texto style={styles.botaoModalTexto}>Salvar</Texto>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <BarraNavegacao navigation={navigation} abaAtiva="Rota" />
       </SafeAreaView>
     </>
   );
@@ -139,130 +299,161 @@ const styles = StyleSheet.create({
     backgroundColor: "#050a24",
     flex: 1,
   },
-  content: {
-    paddingHorizontal: width > 768 ? width * 0.1 : 16,
+  scrollView: {
     flex: 1,
-    paddingBottom: 0,
+  },
+  content: {
+    paddingHorizontal: width * 0.05,
+    paddingBottom: 20,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 10,
-  },
-  abas: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 15,
-    bottom: 0,
-    paddingHorizontal: 15,
-    gap: 15,
-    marginTop: "auto",
-  },
-  abaItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1c2337",
-    borderRadius: 16,
-    minHeight: 60,
-  },
-  abaIcon: {
-    width: 27,
-    height: 27,
-    resizeMode: "contain",
-  },
-  abaText: {
-    color: "#AAB1C4",
-    fontSize: 12,
-  },
-  abaAtiva: {
-    backgroundColor: "#0B49C1",
-    borderRadius: 16,
-    minHeight: 60,
-  },
-  abaAtivaTexto: {
-    color: "white",
-    fontWeight: "bold",
+    paddingHorizontal: width * 0.05,
+    width: "100%",
   },
   logo: {
     resizeMode: "contain",
-    width: Math.min(120, width * 0.3),
-    height: Math.min(60, width * 0.15),
-    marginBottom: 5,
+    width: Math.min(150, width * 0.4),
+    height: Math.min(75, width * 0.2),
   },
-  semAlunosTexto: {
-    color: "#ccc",
-    fontSize: width > 768 ? 18 : 16,
-    textAlign: "center",
-    marginTop: 40,
+  configIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: "contain",
   },
-  titulo: {
-    fontSize: width > 768 ? 24 : 20,
-    color: "white",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: "#1c2337",
-    borderRadius: 12,
-    marginBottom: 15,
+  titleBar: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: width > 768 ? 25 : 15,
     alignItems: "center",
-    height: width > 768 ? 100 : 80,
+    marginVertical: 20,
   },
-  ladoEsquerdo: {
+  titulo: {
+    fontSize: width > 768 ? 32 : 28,
+    color: "white",
+    fontWeight: "bold",
+  },
+  botaoNovaParada: {
+    backgroundColor: "#0B49C1",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 12,
+  },
+  botaoNovaParadaTexto: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  placeholderContainer: {
+    width: "100%",
+    height: height * 0.3,
+    borderRadius: 15,
+    marginBottom: 20,
+    backgroundColor: "#1c2337",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderText: {
+    color: "#AAB1C4",
+    fontSize: 16,
+  },
+  listHeader: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  infoCard: {
+    backgroundColor: "#1c2337",
+    borderRadius: 15,
+    padding: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  cardRight: {
+    alignItems: "flex-end",
+  },
+  cardTitle: {
+    color: "#AAB1C4",
+    fontSize: 14,
+  },
+  cardSubtitle: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 4,
+  },
+  cardInfo: {
+    color: "#AAB1C4",
+    fontSize: 14,
+  },
+  cardEdit: {
+    color: "white",
+    fontSize: 16,
+    marginTop: 8,
+  },
+  semParadasTexto: {
+    color: "#ccc",
+    textAlign: "center",
+    marginTop: 20,
+  },
+  modalFundo: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000000aa",
   },
-  ladoDireito: {
-    alignItems: "flex-end",
+  modalBox: {
+    backgroundColor: "#1c2337",
+    padding: 20,
+    borderRadius: 16,
+    width: "90%",
+  },
+  modalTitulo: {
+    color: "#fff",
+    fontSize: 20,
+    marginBottom: 15,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  input: {
+    backgroundColor: "#373e4f",
+    borderRadius: 16,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: "#ffffff",
     justifyContent: "center",
   },
-  nome: {
-    color: "white",
-    fontSize: width > 768 ? 18 : 16,
-    fontWeight: "bold",
+  botoesModal: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    gap: 10,
   },
-  ponto: {
-    color: "#ccc",
-    fontSize: width > 768 ? 16 : 14,
-  },
-  pago: {
-    color: "limegreen",
-    fontSize: width > 768 ? 16 : 14,
-  },
-  naoPago: {
-    color: "orange",
-    fontSize: width > 768 ? 16 : 14,
-  },
-  botao: {
-    backgroundColor: "#0B49C1",
-    paddingVertical: width > 768 ? 20 : 16,
-    paddingHorizontal: 16,
+  botaoCancelar: {
+    backgroundColor: "#373e4f",
+    paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
-    minHeight: width > 768 ? 60 : 50,
+    flex: 1,
   },
-  botaoTexto: {
-    color: "white",
-    fontSize: width > 768 ? 24 : 20,
-    fontWeight: "bold",
-  },
-  botaoPequeno: {
+  botaoModal: {
     backgroundColor: "#0B49C1",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginVertical: 4,
-    minWidth: 70,
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: "center",
+    flex: 1,
   },
-  botaoPequenoTexto: {
-    color: "white",
+  botaoModalTexto: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
-    fontSize: width > 768 ? 16 : 14,
   },
 });

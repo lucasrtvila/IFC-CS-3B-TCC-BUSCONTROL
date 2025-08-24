@@ -12,9 +12,11 @@
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-navigation/native": "*",
     "@react-navigation/stack": "*",
-    "expo": "53.0.20",
+    "expo": "^53.0.20",
+    "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.2",
     "expo-location": "~18.1.6",
+    "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
@@ -22,8 +24,7 @@
     "react-native-paper": "4.9.2",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "expo-dev-client": "~5.2.4",
-    "expo-sqlite": "~15.2.14"
+    "react-native-maps": "1.20.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

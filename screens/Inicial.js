@@ -1,11 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
-import { VeiculosContext } from "../components/VeiculosContext";
-import { LembretesContext } from "../components/LembretesContext";
-import { UsuariosContext } from "../components/UsuariosContext";
-import Texto from "../components/Texto";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Image,
@@ -13,19 +8,23 @@ import {
   TextInput,
   Modal,
   Dimensions,
-  Platform,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Location from "expo-location"; //importa a localização pra poder usar depois pra exibir na tela
+import * as Location from "expo-location";
 
-const { height, width } = Dimensions.get("window");
-const isWeb = Platform.OS === "web";
+import { VeiculosContext } from "../components/VeiculosContext";
+import { LembretesContext } from "../components/LembretesContext";
+import { UsuariosContext } from "../components/UsuariosContext";
+import Texto from "../components/Texto";
+import BarraNavegacao from "../components/BarraNavegacao";
 
-export default function Inicial({ navigation, route }) {
+const { width, height } = Dimensions.get("window");
+
+export default function Inicial({ navigation }) {
   const { usuario } = useContext(UsuariosContext);
   const nomeUsuario = usuario?.nome || "Usuário";
-  const [localizacao, setLocalizacao] = useState("Buscando..."); //useState, array que recebe estado atual e função pra alterar, no começo é passado o estado padrão. OU seja, buscando é o estado padrão e a funcao de alterar muda ela depois.
+  const [localizacao, setLocalizacao] = useState("Buscando...");
   const [mensalidade, setMensalidade] = useState(380.0);
   const [saudacao, setSaudacao] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -34,10 +33,8 @@ export default function Inicial({ navigation, route }) {
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
 
-  const abaAtiva = "Inicial";
-
   useEffect(() => {
-    const hora = new Date().getHours(); //variavel hora recebe a getHours da função de data
+    const hora = new Date().getHours();
     if (hora >= 5 && hora < 12) setSaudacao("Bom dia, ");
     else if (hora >= 12 && hora < 18) setSaudacao("Boa tarde, ");
     else setSaudacao("Boa noite, ");
@@ -90,21 +87,28 @@ export default function Inicial({ navigation, route }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView
-        style={styles.container}
-        edges={["bottom", "left", "right", "top"]}
-      >
-        <View style={styles.content}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
           <View style={styles.header}>
+            <View style={styles.headerPlaceholder} />
             <Image
               source={require("../assets/logoinicial.png")}
               style={styles.logo}
             />
-            <Texto style={styles.boasVindas}>
-              {saudacao}
-              <Texto style={styles.nome}>{nomeUsuario}</Texto>
-            </Texto>
+            <TouchableOpacity
+              style={styles.configButton}
+              onPress={() => navigation.navigate("Configuracoes")}
+            >
+              <Image
+                source={require("../assets/configuracoes.png")}
+                style={styles.configIcon}
+              />
+            </TouchableOpacity>
           </View>
+          <Texto style={styles.boasVindas}>
+            {saudacao}
+            <Texto style={styles.nome}>{nomeUsuario}</Texto>
+          </Texto>
 
           <View style={styles.cardsContainer}>
             <TouchableOpacity style={styles.card}>
@@ -141,15 +145,15 @@ export default function Inicial({ navigation, route }) {
                 veiculos.slice(0, 4).map((v) => (
                   <View key={v.id} style={{ marginBottom: 6 }}>
                     <Texto style={styles.miniText}>
-                      {v.nome.length > 22 // se a propriedade nome do obj veiculo for maior que 22 caracteres
-                        ? v.nome.slice(0, 20) + "..." // se for, corta até o caractere 20 e add 3 pontos, se nao so mostra o nome inteiro
+                      {v.nome.length > 22
+                        ? v.nome.slice(0, 20) + "..."
                         : v.nome}
                     </Texto>
                     <Texto
                       style={
-                        v.status === "Ativo" // se a propriedade veiculo.status ativo for
-                          ? styles.statusAtivo //verdadeiro: o estilo vai ser de ativo
-                          : styles.statusManutencao //falso: o estilo vai ser manutencao
+                        v.status === "Ativo"
+                          ? styles.statusAtivo
+                          : styles.statusManutencao
                       }
                     >
                       {v.status}
@@ -161,34 +165,33 @@ export default function Inicial({ navigation, route }) {
 
             <TouchableOpacity
               style={styles.miniCard}
-              onPress={() => navigation.navigate("Lembretes")} // quando apertar em cima vai pra lembretes
+              onPress={() => navigation.navigate("Lembretes")}
             >
               <Texto style={styles.cardTitle}>Lembretes</Texto>
-              {lembretes.length === 0 ? ( // se o tamanho da lista de lembretes for 0, vai exibir nenhum lembrete registrado
+              {lembretes.length === 0 ? (
                 <Texto style={styles.miniText}>
                   Nenhum lembrete registrado
                 </Texto>
               ) : (
-                lembretes.slice(0, 4).map(
-                  (
-                    l // o slice limita o card a exibir no max 4 lembretes
-                  ) => (
-                    <View key={l.id} style={{ marginBottom: 6 }}>
-                      <Texto style={styles.miniText}>
-                        {l.titulo.length > 22
-                          ? l.titulo.slice(0, 20) + "..."
-                          : l.titulo}
-                      </Texto>
-                      <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
-                        {l.data}
-                      </Texto>
-                    </View>
-                  )
-                )
+                lembretes.slice(0, 4).map((l) => (
+                  <View key={l.id} style={{ marginBottom: 6 }}>
+                    <Texto style={styles.miniText}>
+                      {l.titulo.length > 22
+                        ? l.titulo.slice(0, 20) + "..."
+                        : l.titulo}
+                    </Texto>
+                    <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
+                      {l.data}
+                    </Texto>
+                  </View>
+                ))
               )}
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.botaoPrincipal}>
+          <TouchableOpacity
+            style={styles.botaoPrincipal}
+            onPress={() => Alert.alert("Funcionalidade em desenvolvimento")}
+          >
             <Texto style={styles.botaoText}>Nova Viagem</Texto>
           </TouchableOpacity>
         </View>
@@ -222,106 +225,47 @@ export default function Inicial({ navigation, route }) {
             </View>
           </View>
         </Modal>
-        {/* Barra de navegação inferior */}
-        <View style={styles.abas}>
-          <TouchableOpacity
-            style={[styles.abaItem, styles.abaAtiva]}
-            accessibilityRole="button"
-            accessibilityLabel="Ir para Início"
-          >
-            <Image
-              source={require("../assets/voltar.png")}
-              style={styles.abaIcon}
-            />
-            <Texto style={[styles.abaText, styles.abaAtivaTexto]}>Início</Texto>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Alunos")}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Alunos"
-          >
-            <Image
-              source={require("../assets/alunos.png")}
-              style={styles.abaIcon}
-            />
-            <Texto style={styles.abaText}>Alunos</Texto>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.abaItem}
-            onPress={() => navigation.navigate("Rota")}
-            accessibilityRole="button"
-            accessibilityLabel="Tela de Rota"
-          >
-            <Image
-              source={require("../assets/rota.png")}
-              style={styles.abaIcon}
-            />
-            <Texto style={styles.abaText}>Rota</Texto>
-          </TouchableOpacity>
-        </View>
+        <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
       </SafeAreaView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
+    flex: 1,
     backgroundColor: "#050a24",
-    flex: 1,
   },
-  content: {
-    paddingHorizontal: width > 768 ? width * 0.1 : 16,
+  container: {
     flex: 1,
-    paddingBottom: 0,
-    minHeight: height - 120,
+    paddingHorizontal: width > 768 ? width * 0.1 : 16,
+    alignItems: "center",
+    justifyContent: "space-between", // Distribui o espaço verticalmente
+    paddingVertical: 10, // Adiciona um respiro vertical
   },
   header: {
-    alignItems: "center",
-    paddingTop: 10,
-  },
-  abas: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    marginTop: "auto",
-    gap: 15,
-    //bottom: 0,
-  },
-  abaItem: {
-    flex: 1,
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1c2337",
-    borderRadius: 16,
-    minHeight: 60,
+    width: "100%",
+    paddingHorizontal: 10,
   },
-  abaIcon: {
-    width: 27,
-    height: 27,
+  headerPlaceholder: {
+    width: 48,
+  },
+  configButton: {
+    padding: 10,
+  },
+  configIcon: {
+    width: 28,
+    height: 28,
     resizeMode: "contain",
-  },
-  abaText: {
-    color: "#AAB1C4",
-    fontSize: 12,
-  },
-  abaAtiva: {
-    backgroundColor: "#0B49C1",
-    borderRadius: 16,
-    minHeight: 60,
-  },
-  abaAtivaTexto: {
-    color: "white",
-    fontWeight: "bold",
   },
   logo: {
     resizeMode: "contain",
-    width: Math.min(120, width * 0.3),
-    height: Math.min(60, width * 0.15),
-    marginBottom: 5,
+    width: Math.min(120, width * 0.4),
+    height: Math.min(60, width * 0.2),
   },
   boasVindas: {
     color: "white",
@@ -333,15 +277,14 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     gap: 12,
-    marginTop: 16,
+    width: "100%",
   },
   card: {
     backgroundColor: "#1c2337",
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.04,
     justifyContent: "center",
-    marginBottom: 5,
   },
   cardCenterContent: {
     alignItems: "center",
@@ -367,14 +310,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 8,
-    marginVertical: 12,
+    width: "100%",
   },
   miniCard: {
     backgroundColor: "#1c2337",
     borderRadius: 16,
     padding: 12,
     flex: 1,
-    minHeight: 250,
+    minHeight: height * 0.2,
   },
   miniText: {
     color: "#AAB1C4",
@@ -390,20 +333,16 @@ const styles = StyleSheet.create({
   },
   botaoPrincipal: {
     backgroundColor: "#0B49C1",
-    paddingVertical: width > 768 ? 20 : 16,
-    paddingHorizontal: 16,
+    paddingVertical: height * 0.02,
     borderRadius: 16,
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
-    minHeight: width > 768 ? 60 : 50,
+    width: "100%",
   },
   botaoText: {
     color: "white",
-    fontSize: width > 768 ? 24 : 20,
+    fontSize: width > 768 ? 22 : 18,
     fontWeight: "bold",
   },
-
   modalBackground: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -441,9 +380,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
-
   saveButton: {
     backgroundColor: "#0B49C1",
+  },
+  cancelButton: {
+    backgroundColor: "#373e4f",
   },
   modalButtonText: {
     color: "white",

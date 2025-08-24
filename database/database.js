@@ -27,21 +27,19 @@ async function checkIfColumnExists(tableName, columnName) {
   return result.some(column => column.name === columnName);
 }
 
-// Função para migrar o banco (adicionar coluna CPF se não existir)
+// Função para migrar o banco (adicionar coluna telefone se não existir)
 export async function migrateDatabase() {
   return queueOperation(async () => {
     const database = await getDB();
-    
     try {
-      // Verifica se a coluna CPF já existe
-      const cpfExists = await checkIfColumnExists('alunos', 'cpf');
-      
-      if (!cpfExists) {
-        console.log("Adicionando coluna CPF à tabela alunos...");
-        await database.execAsync(`ALTER TABLE alunos ADD COLUMN cpf TEXT;`);
-        console.log("Coluna CPF adicionada com sucesso!");
+      // Verifica se a coluna telefone já existe
+      const telefoneExists = await checkIfColumnExists('alunos', 'telefone');
+      if (!telefoneExists) {
+        console.log("Adicionando coluna telefone à tabela alunos...");
+        await database.execAsync(`ALTER TABLE alunos ADD COLUMN telefone TEXT;`);
+        console.log("Coluna telefone adicionada com sucesso!");
       } else {
-        console.log("Coluna CPF já existe!");
+        console.log("Coluna telefone já existe!");
       }
     } catch (error) {
       console.log("Erro na migração:", error);
@@ -79,6 +77,7 @@ export async function resetDatabase() {
           cpf TEXT,
           ultimoPagamento TEXT,
           status TEXT NOT NULL,
+          telefone TEXT,
           paradaId INTEGER
         );
         CREATE TABLE paradas (
@@ -122,6 +121,7 @@ export async function initDB() {
           cpf TEXT,
           ultimoPagamento TEXT,
           status TEXT NOT NULL,
+          telefone TEXT,
           paradaId INTEGER
         );
         
@@ -218,37 +218,22 @@ export async function getAlunos() {
 }
 
 // CORRIGIDO: Função addAluno com todos os campos na ordem correta
-export async function addAluno(nome, cpf, status, ultimoPagamento = '') {
+export async function addAluno(nome, cpf, status, ultimoPagamento = '', telefone = '') {
   return queueOperation(async () => {
-    console.log("=== ADDALUNO NO BANCO ===");
-    console.log("Parâmetros:", { nome, cpf, status, ultimoPagamento });
-    
     const database = await getDB();
-    console.log("Database obtido:", !!database);
-    
-    try {
-      const result = await database.runAsync(
-        "INSERT INTO alunos (nome, cpf, status, ultimoPagamento) VALUES (?, ?, ?, ?)",
-        [nome, cpf || '', status, ultimoPagamento]
-      );
-      console.log("✅ Inserção bem-sucedida! Result:", result);
-      console.log("ID inserido:", result.lastInsertRowId);
-      return result;
-    } catch (error) {
-      console.log("❌ Erro na inserção:", error);
-      throw error;
-    }
+    return await database.runAsync(
+      "INSERT INTO alunos (nome, cpf, status, ultimoPagamento, telefone) VALUES (?, ?, ?, ?, ?)",
+      [nome, cpf || '', status, ultimoPagamento, telefone || '']
+    );
   });
 }
 
-// CORRIGIDO: Função updateAluno com todos os campos na ordem correta
-export async function updateAluno(id, nome, cpf, ultimoPagamento, status) {
+export async function updateAluno(id, nome, cpf, ultimoPagamento, status, telefone) {
   return queueOperation(async () => {
     const database = await getDB();
-    console.log("Atualizando aluno no banco:", { id, nome, cpf, ultimoPagamento, status }); // Debug
     return await database.runAsync(
-      "UPDATE alunos SET nome = ?, cpf = ?, ultimoPagamento = ?, status = ? WHERE id = ?",
-      [nome, cpf || '', ultimoPagamento || '', status, id]
+      "UPDATE alunos SET nome = ?, cpf = ?, ultimoPagamento = ?, status = ?, telefone = ? WHERE id = ?",
+      [nome, cpf || '', ultimoPagamento || '', status, telefone || '', id]
     );
   });
 }
