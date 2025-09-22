@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import {
   getParadas,
   addParada,
+  updateParada,
   deleteParada,
   getAlunos,
   updateAluno

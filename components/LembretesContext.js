@@ -1,24 +1,47 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import { Alert } from "react-native";
+import {
+  initDB,
+  getLembretes,
+  salvarLembrete,
+  editLembrete,
+  removeLembrete,
+} from "../database/database";
 
 export const LembretesContext = createContext();
 
 export const LembretesProvider = ({ children }) => {
   const [lembretes, setLembretes] = useState([]);
+  const [dbPronto, setDbPronto] = useState(false);
 
-  const adicionarLembrete = (titulo, data) => {
-    setLembretes((prev) => [...prev, { titulo, data }]); //prev: pega a versao mais atualizada da lista, ...prev copia tudo que ja tava la e no final adiciona um novo titulo e data(lembrete)
+  // Carrega os lembretes do banco ao iniciar
+  useEffect(() => {
+    (async () => {
+      await initDB();
+      setDbPronto(true);
+      await carregarLembretes();
+    })();
+  }, []);
+
+  const carregarLembretes = async () => {
+      const lista = await getLembretes();
+      setLembretes(lista);
+    };
+
+
+  const adicionarLembrete = async (titulo, data, hora = null) => {
+    await salvarLembrete(titulo, data, hora);
+    const lista = await getLembretes();
+    setLembretes(lista);
   };
 
-  const editarLembrete = (index, novoTitulo, novaData) => {
-    //editarLembretes vai receber o index do lembrete a ser editado, seu novo titulo e sua nova data como parametro
-    const atualizados = [...lembretes]; // a array atualizados vai receber o que ja estava antes em lembretes, como uma duplicacao de variavel por seguranca
-    atualizados[index] = { titulo: novoTitulo, data: novaData }; // dentro da array atualizados, no index fornecido la em cima, a propriedade titulo ou data podem receber os novos valores fornecidos la em cima tbm
-    setLembretes(atualizados);
+  const editarLembrete = async (id, novoTitulo, novaData, novaHora = null) => {
+    await editLembrete(id, novoTitulo, novaData, novaHora);
+    const lista = await getLembretes();
+    setLembretes(lista);
   };
 
-  const removerLembrete = (index) => {
-    // a funcao de remover vai pedir so o index pra achar o lembrete certo pra excluir né...
+  const removerLembrete = (id) => {
     Alert.alert(
       "Confirmar remoção",
       "Deseja realmente remover este lembrete?",
@@ -27,8 +50,10 @@ export const LembretesProvider = ({ children }) => {
         {
           text: "Remover",
           style: "destructive",
-          onPress: () => {
-            setLembretes((prev) => prev.filter((_, i) => i !== index));
+          onPress: async () => {
+            await removeLembrete(id);
+            const lista = await getLembretes();
+            setLembretes(lista);
           },
         },
       ]

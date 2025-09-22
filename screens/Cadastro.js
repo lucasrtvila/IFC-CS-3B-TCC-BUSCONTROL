@@ -7,66 +7,47 @@ import {
   StyleSheet,
   Image,
   StatusBar,
-  SafeAreaView,
 } from "react-native";
 import Texto from "../components/Texto";
-import { UsuariosContext } from "../components/UsuariosContext";
-
+import { setUsuario } from "../database/database";
+ 
 export default function CadastroScreen({ navigation }) {
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const { registrarUsuario } = useContext(UsuariosContext);
-  const registrarDados = () => {
-    registrarUsuario({ nome, email, senha });
+  const [nome, setNome] = useState("");;
+
+  const registrarDados = async () => {
+  await  setUsuario( nome );
     navigation.navigate("Inicial");
   };
+
   return (
     <>
-    <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-    <SafeAreaView style={styles.container}>
-      <Image
-        source={require("../assets/logoinicial.png")}
-        style={styles.logo}
-      />
-      <View style={styles.content}>
-        <Texto style={styles.subtitulo}>Criar conta</Texto>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nome"
-          placeholderTextColor="#AAB1C4"
-          value={nome}
-          onChangeText={setNome}
+      <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
+      <View style={styles.container}>
+        <Image
+          source={require("../assets/logoinicial.png")}
+          style={styles.logo}
         />
+        <View style={styles.content}>
+          <Texto style={styles.subtitulo}>Seja bem-vindo!</Texto>
+          <Texto style={styles.subtitulo}>Insira seu nome para inciar</Texto>
+          <TextInput
+            style={styles.input}
+            placeholder="Nome do motorista"
+            placeholderTextColor="#AAB1C4"
+            value={nome}
+            onChangeText={setNome}
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="#AAB1C4"
-          value={email}
-          onChangeText={setEmail}
-        />
+          <TouchableOpacity
+            style={styles.botao}
+            onPress={() => registrarDados()}
+          >
+            <Texto style={styles.textoBotao}>Começar</Texto>
+          </TouchableOpacity>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor="#AAB1C4"
-          secureTextEntry
-          value={senha}
-          onChangeText={setSenha}
-        />
-
-        <TouchableOpacity style={styles.botao} onPress={() => registrarDados()}>
-          <Texto style={styles.textoBotao}>Registrar</Texto>
-        </TouchableOpacity>
-
-        <Texto style={styles.loginText}>
-          Já tem uma conta? <Texto style={styles.link}>Entrar</Texto>
-        </Texto>
+        </View>
       </View>
-    </SafeAreaView>
-  </>
+    </>
   );
 }
 const styles = StyleSheet.create({
@@ -76,7 +57,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 170,
   },
   content: {
     width: "100%",
@@ -85,6 +66,7 @@ const styles = StyleSheet.create({
     marginTop: -110,
   },
   logo: {
+    top: -60,
     marginBottom: 10,
     resizeMode: "contain",
     width: 300,
@@ -96,9 +78,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   subtitulo: {
-    fontSize: 16,
+    top:-20,
+    fontSize: 26,
     color: "#FFFFFF",
-    marginBottom: 30,
+    marginBottom: 10,
+    paddingVertical:10
   },
   input: {
     backgroundColor: "#1c2337",
@@ -107,10 +91,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 20,
     color: "#FFFFFF",
-    marginBottom: 28,
-    fontSize: 16,
+    marginBottom: 30,
+    fontSize: 20,
+    textAlign: "center",
   },
   botao: {
+    bottom: -30,
     backgroundColor: "#246BFD",
     paddingVertical: 20,
     borderRadius: 20,
@@ -121,14 +107,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  loginText: {
-    color: "#FFFFFF",
-    marginTop: 20,
-    fontSize: 14,
-  },
-  link: {
-    color: "#246BFD",
-    textDecorationLine: "underline",
   },
 });

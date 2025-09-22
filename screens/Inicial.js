@@ -9,26 +9,40 @@ import {
   Modal,
   Dimensions,
   StatusBar,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
-import { UsuariosContext } from "../components/UsuariosContext";
+
+import { getUsuario } from "../database/database";
+import { salvarMensalidade, getMensalidade } from "../database/database";
+
 import Texto from "../components/Texto";
 import BarraNavegacao from "../components/BarraNavegacao";
 import Header from "../components/Header";
 
 const { width, height } = Dimensions.get("window");
 
+function formatarData(data) {
+  const dia = data.getDate().toString().padStart(2, "0");
+  const mes = (data.getMonth() + 1).toString().padStart(2, "0");
+  const ano = data.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
 export default function Inicial({ navigation }) {
-  const { usuario } = useContext(UsuariosContext);
-  const nomeUsuario = usuario?.nome || "Usuário";
+  const [usuario, setUsuario] = useState(null);
   const [localizacao, setLocalizacao] = useState("Buscando...");
   const [mensalidade, setMensalidade] = useState(380.0);
   const [saudacao, setSaudacao] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [novoValorMensalidade, setNovoValorMensalidade] = useState("");
+  const [dataVencimento, setDataVencimento] = useState(new Date());
+  const [dataInput, setDataInput] = useState(formatarData(new Date()));
+  const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
 
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
@@ -38,6 +52,18 @@ export default function Inicial({ navigation }) {
     if (hora >= 5 && hora < 12) setSaudacao("Bom dia, ");
     else if (hora >= 12 && hora < 18) setSaudacao("Boa tarde, ");
     else setSaudacao("Boa noite, ");
+  }, []);
+
+  useEffect(() => {
+    async function carregarUsuario() {
+      try {
+        const usuarioDB = await getUsuario(); // busca no banco
+        setUsuario(usuarioDB);
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      }
+    }
+    carregarUsuario();
   }, []);
 
   useEffect(() => {
@@ -69,14 +95,31 @@ export default function Inicial({ navigation }) {
     obterLocalizacao();
   }, []);
 
+  useEffect(() => {
+    async function carregarMensalidade() {
+      const mensalidadeBanco = await getMensalidade();
+      if (mensalidadeBanco) {
+        setMensalidade(mensalidadeBanco.valor);
+        setDataVencimento(new Date(mensalidadeBanco.dataVencimento));
+      }
+    }
+    carregarMensalidade();
+  }, []);
+
   const abrirModalMensalidade = () => {
+    setMostrarDatePicker(false);
     setNovoValorMensalidade("");
     setModalVisible(true);
+    setDataInput(formatarData(dataVencimento));
   };
 
-  const salvarMensalidade = () => {
+  const salvarMensalidadeHandler = async () => {
     const valor = parseFloat(novoValorMensalidade);
     if (!isNaN(valor)) {
+      await salvarMensalidade(
+        valor,
+        dataVencimento.toISOString().split("T")[0]
+      );
       setMensalidade(valor);
       setModalVisible(false);
     } else {
@@ -84,12 +127,23 @@ export default function Inicial({ navigation }) {
     }
   };
 
+  const abrirDatePicker = () => {
+    setMostrarDatePicker(true);
+  };
+
+  const aoSelecionarData = (event, selectedDate) => {
+    setMostrarDatePicker(Platform.OS === "ios"); // no iOS deixa aberto
+    if (selectedDate) setDataVencimento(selectedDate);
+  };
+
+  const nomeUsuario = usuario?.nome || "Usuário";
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.container}>
-          <Header style = {styles.header} navigation={navigation} />
+          <Header style={styles.header} navigation={navigation} />
           <Texto style={styles.boasVindas}>
             {saudacao}
             <Texto style={styles.nome}>{nomeUsuario}</Texto>
@@ -166,7 +220,7 @@ export default function Inicial({ navigation }) {
                         : l.titulo}
                     </Texto>
                     <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
-                      {l.data}
+                      {l.data} - {l.hora}
                     </Texto>
                   </View>
                 ))
@@ -175,7 +229,7 @@ export default function Inicial({ navigation }) {
           </View>
           <TouchableOpacity
             style={styles.botaoPrincipal}
-            onPress={() => Alert.alert("Funcionalidade em desenvolvimento")}
+            onPress={() => navigation.navigate("NovaViagem")}
           >
             <Texto style={styles.botaoText}>Nova Viagem</Texto>
           </TouchableOpacity>
@@ -185,6 +239,8 @@ export default function Inicial({ navigation }) {
           <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
               <Texto style={styles.modalTitle}>Editar Mensalidade</Texto>
+
+              <Texto style={styles.label}>Valor</Texto>
               <TextInput
                 style={styles.input}
                 placeholder="Novo valor"
@@ -193,6 +249,28 @@ export default function Inicial({ navigation }) {
                 value={novoValorMensalidade}
                 onChangeText={setNovoValorMensalidade}
               />
+
+              <Texto style={styles.label}>Data de Vencimento</Texto>
+              <TouchableOpacity
+                onPress={abrirDatePicker}
+                style={styles.inputData}
+              >
+                <Texto
+                  style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}
+                >
+                  {formatarData(dataVencimento)}
+                </Texto>
+              </TouchableOpacity>
+
+              {mostrarDatePicker && (
+                <DateTimePicker
+                  value={dataVencimento}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={aoSelecionarData}
+                />
+              )}
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
@@ -202,7 +280,7 @@ export default function Inicial({ navigation }) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.saveButton]}
-                  onPress={salvarMensalidade}
+                  onPress={salvarMensalidadeHandler}
                 >
                   <Texto style={styles.modalButtonText}>Salvar</Texto>
                 </TouchableOpacity>
@@ -212,7 +290,7 @@ export default function Inicial({ navigation }) {
         </Modal>
 
         <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -221,23 +299,23 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
+    paddingVertical: 30, // Adiciona um respiro vertical
   },
   header: {
-    top: -30,
+    top: -10,
   },
   container: {
     flex: 1,
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     alignItems: "center",
     justifyContent: "space-between", // Distribui o espaço verticalmente
-    paddingVertical: 0, // Adiciona um respiro vertical
-    marginBottom: 20
+    marginBottom: 20,
   },
   boasVindas: {
     color: "white",
     fontSize: width > 768 ? 24 : 20,
     textAlign: "center",
-    top: -25
+    top: -25,
   },
   nome: {
     fontWeight: "bold",
@@ -305,7 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     width: "100%",
-    marginTop:30
+    marginTop: 30,
   },
   botaoText: {
     color: "white",
@@ -335,7 +413,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     borderRadius: 8,
     padding: 10,
-    marginTop: 10,
     fontSize: 18,
   },
   modalButtons: {
@@ -359,5 +436,19 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  inputData: {
+    backgroundColor: "#373e4f",
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    justifyContent: "center",
+  },
+  label: {
+    color: "#fff",
+    fontSize: 16,
+    marginBottom: 8,
+    marginTop: 10,
   },
 });

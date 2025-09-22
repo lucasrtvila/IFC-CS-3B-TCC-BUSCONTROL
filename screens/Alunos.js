@@ -11,8 +11,8 @@ import {
   StatusBar,
   Linking,
   Alert,
+
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import RNPickerSelect from "react-native-picker-select";
 import Texto from "../components/Texto";
 import { AlunosContext } from "../components/AlunosContext";
@@ -170,7 +170,7 @@ export default function AlunosScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.content}>
           <View style={styles.header}>
             <Header navigation={navigation} />
@@ -282,13 +282,13 @@ export default function AlunosScreen({ navigation }) {
                 placeholder={{
                   label: "Selecione uma parada",
                   value: null,
-                  color: "#cfcfcf",
+                  color: "#000000ff",
                 }}
                 items={paradas.map((parada) => ({
                   label: parada.nome,
                   value: parada.id,
                   key: parada.id,
-                  color: "#fff",
+                  color: "#000000ff",
                 }))}
                 style={{
                   inputIOS: styles.pickerInput,
@@ -439,7 +439,7 @@ export default function AlunosScreen({ navigation }) {
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -448,6 +448,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#050a24",
     flex: 1,
+    paddingVertical: 30,
   },
   content: {
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    top: -30
+    top: -10
   },
   semAlunosTexto: {
     color: "#ccc",

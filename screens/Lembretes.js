@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LembretesContext } from "../components/LembretesContext";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -25,6 +24,12 @@ function formatarData(data) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function formatarHora(data) {
+  const hora = data.getHours().toString().padStart(2, "0");
+  const min = data.getMinutes().toString().padStart(2, "0");
+  return `${hora}:${min}`;
+}
+
 export default function LembretesScreen({ navigation }) {
   const { lembretes, adicionarLembrete, editarLembrete, removerLembrete } =
     useContext(LembretesContext);
@@ -33,56 +38,80 @@ export default function LembretesScreen({ navigation }) {
   const [editarIndex, setEditarIndex] = useState(null);
   const [tituloInput, setTituloInput] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
+  const [horaSelecionada, setHoraSelecionada] = useState(new Date());
   const [dataInput, setDataInput] = useState(formatarData(new Date()));
+  const [horaInput, setHoraInput] = useState(formatarHora(new Date()));
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
+  const [mostrarHoraPicker, setMostrarHoraPicker] = useState(false);
 
   const abrirModal = (index = null) => {
     if (index !== null) {
-      setEditarIndex(index);
+      setEditarIndex(lembretes[index].id); 
       setTituloInput(lembretes[index].titulo);
-      setDataInput(lembretes[index].data);
-      setDataSelecionada(new Date(lembretes[index].data));
+
+      // Separa data e hora do item
+      const dataStr = lembretes[index].data;
+      const horaStr = lembretes[index].hora || "00:00";
+      setDataInput(dataStr);
+      setHoraInput(horaStr);
+
+      // Cria objetos Date para os pickers
+      const [dia, mes, ano] = dataStr.split("/");
+      const [h, m] = horaStr.split(":");
+      const dataObj = new Date(ano, mes - 1, dia, h, m);
+      setDataSelecionada(dataObj);
+      setHoraSelecionada(dataObj);
     } else {
       setEditarIndex(null);
       setTituloInput("");
       const hoje = new Date();
       setDataSelecionada(hoje);
+      setHoraSelecionada(hoje);
       setDataInput(formatarData(hoje));
+      setHoraInput(formatarHora(hoje));
     }
     setMostrarDatePicker(false);
+    setMostrarHoraPicker(false);
     setModalVisible(true);
   };
 
-  const salvarLembrete = () => {
-    if (!tituloInput.trim() || !dataInput.trim()) {
-      //se não tiver o título ou não tiver a data, vai exibir erro
-      Alert.alert("Erro", "Preencha título e data.");
+  const handleAdicionarLembrete = () => {
+    console.log({ tituloInput, dataInput, horaInput, editarIndex });
+    if (!tituloInput.trim() || !dataInput.trim() || !horaInput.trim()) {
+      Alert.alert("Erro", "Preencha título, data e hora.");
       return;
     }
 
     if (editarIndex !== null) {
-      editarLembrete(editarIndex, tituloInput, dataInput);
+      editarLembrete(editarIndex, tituloInput, dataInput, horaInput);
     } else {
-      adicionarLembrete(tituloInput, dataInput);
+      adicionarLembrete(tituloInput, dataInput, horaInput);
     }
-
+    
     setModalVisible(false);
   };
 
-  const abrirDatePicker = () => {
-    setMostrarDatePicker(true);
-  };
+  const abrirDatePicker = () => setMostrarDatePicker(true);
+  const abrirHoraPicker = () => setMostrarHoraPicker(true);
 
   const aoSelecionarData = (event, selectedDate) => {
-    setMostrarDatePicker(Platform.OS === "ios"); // No iOS pode deixar aberto até o usuário fechar
+    setMostrarDatePicker(Platform.OS === "ios");
     if (selectedDate) {
       setDataSelecionada(selectedDate);
       setDataInput(formatarData(selectedDate));
     }
   };
 
+  const aoSelecionarHora = (event, selectedTime) => {
+    setMostrarHoraPicker(Platform.OS === "ios");
+    if (selectedTime) {
+      setHoraSelecionada(selectedTime);
+      setHoraInput(formatarHora(selectedTime));
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -99,29 +128,31 @@ export default function LembretesScreen({ navigation }) {
       <View style={styles.conteudo}>
         <FlatList
           data={lembretes}
-          keyExtractor={(_, index) => index.toString()}
+          keyExtractor={item => item.id?.toString()}
           style={styles.lista}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Texto style={styles.emptyText}>Nenhum lembrete registrado</Texto>
             </View>
           }
-          renderItem={({ item, index }) => (
+          renderItem={({ item }) => (
             <View style={styles.lembreteItem}>
               <TouchableOpacity
                 style={styles.lembreteInfo}
-                onPress={() => abrirModal(index)}
+                onPress={() => abrirModal(lembretes.findIndex(l => l.id === item.id))}
               >
                 <Texto style={styles.lembreteTitulo} numberOfLines={2}>
                   {item.titulo}
                 </Texto>
-                <Texto style={styles.lembreteData}>{item.data}</Texto>
+                <Texto style={styles.lembreteData}>
+                  {item.data} - {item.hora ? item.hora : ""}
+                </Texto>
               </TouchableOpacity>
 
               <View style={styles.excluirContainer}>
                 <TouchableOpacity
                   style={styles.botaoRemover}
-                  onPress={() => removerLembrete(index)}
+                  onPress={() => removerLembrete(item.id)}
                 >
                   <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
                 </TouchableOpacity>
@@ -159,13 +190,31 @@ export default function LembretesScreen({ navigation }) {
                   {dataInput || "Selecionar data"}
                 </Texto>
               </TouchableOpacity>
-
               {mostrarDatePicker && (
                 <DateTimePicker
                   value={dataSelecionada}
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={aoSelecionarData}
+                />
+              )}
+
+              <Texto style={styles.label}>Hora</Texto>
+              <TouchableOpacity
+                onPress={abrirHoraPicker}
+                style={styles.inputData}
+              >
+                <Texto style={{ color: horaInput ? "#fff" : "#cfcfcf" }}>
+                  {horaInput || "Selecionar hora"}
+                </Texto>
+              </TouchableOpacity>
+              {mostrarHoraPicker && (
+                <DateTimePicker
+                  value={horaSelecionada}
+                  mode="time"
+                  is24Hour={true}
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={aoSelecionarHora}
                 />
               )}
 
@@ -176,7 +225,8 @@ export default function LembretesScreen({ navigation }) {
                 >
                   <Texto style={styles.botaoTexto}>Cancelar</Texto>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.botao} onPress={salvarLembrete}>
+                
+                <TouchableOpacity style={styles.botao} onPress={handleAdicionarLembrete}>
                   <Texto style={styles.botaoTexto}>Salvar</Texto>
                 </TouchableOpacity>
               </View>
@@ -184,7 +234,7 @@ export default function LembretesScreen({ navigation }) {
           </View>
         </Modal>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -193,7 +243,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: -10,
+    paddingVertical:30,
     paddingBottom: 20,
   },
   conteudo: {

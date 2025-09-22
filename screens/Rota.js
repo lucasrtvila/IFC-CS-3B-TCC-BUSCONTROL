@@ -12,7 +12,6 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Texto from "../components/Texto";
 import { ParadasContext } from "../components/ParadasContext";
@@ -35,8 +34,7 @@ export default function RotaScreen({ navigation }) {
   const [horarioNovaParada, setHorarioNovaParada] = useState("");
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const [modalEditarParadaVisivel, setModalEditarParadaVisivel] =
-    useState(false);
+  const [modalEditarParadaVisivel, setModalEditarParadaVisivel] =useState(false);
   const [paradaEditando, setParadaEditando] = useState(null);
   const [novoNome, setNovoNome] = useState("");
   const [novoHorario, setNovoHorario] = useState("");
@@ -113,7 +111,7 @@ export default function RotaScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.content}>
           <Header style={styles.header} navigation={navigation} />
           <Texto style={styles.titulo}>Rota</Texto>
@@ -194,6 +192,7 @@ export default function RotaScreen({ navigation }) {
           <View style={styles.modalFundo}>
             <View style={styles.modalBox}>
               <Texto style={styles.modalTitulo}>Editar Parada</Texto>
+              <Texto style={styles.label}>Nome</Texto>
               <TextInput
                 style={styles.input}
                 placeholder="Nome da Parada"
@@ -201,11 +200,12 @@ export default function RotaScreen({ navigation }) {
                 value={novoNome}
                 onChangeText={setNovoNome}
               />
+              <Texto style={styles.label}>Hora Prevista</Texto>
               <TouchableOpacity
                 style={styles.input}
                 onPress={() => setShowTimePicker(true)}
               >
-                <Texto style={{ color: novoHorario ? "#fff" : "#cfcfcf" }}>
+                <Texto style={{ color: "#fff" , fontWeight: 'bold', fontSize: 16}}>
                   {novoHorario || "Selecionar Horário"}
                 </Texto>
               </TouchableOpacity>
@@ -236,10 +236,7 @@ export default function RotaScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
-                style={[
-                  styles.botaoModal,
-                  { backgroundColor: "#c41628ff", marginTop: 10 },
-                ]}
+                style={styles.botaoExcluir}
                 onPress={handleRemoverParada}
               >
                 <Texto style={styles.botaoModalTexto}>Excluir Parada</Texto>
@@ -249,7 +246,7 @@ export default function RotaScreen({ navigation }) {
         </Modal>
 
         <BarraNavegacao navigation={navigation} abaAtiva="Rota" />
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -258,6 +255,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#050a24",
     flex: 1,
+    paddingVertical: 30,
   },
   content: {
     flex: 1,
@@ -265,7 +263,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    top: -30,
+    top: -10,
     marginBottom:-10
   },
   titulo: {
@@ -381,4 +379,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
+  botaoExcluir: {
+    backgroundColor: "#c41628ff",
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  label: {
+    color: "#fff",
+    fontSize: 16,
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  
 });

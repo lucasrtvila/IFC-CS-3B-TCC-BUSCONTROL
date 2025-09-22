@@ -10,7 +10,6 @@ import {
   FlatList,
 
 } from "react-native";
-import {SafeAreaView} from "react-native-safe-area-context"
 import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
 
@@ -62,7 +61,7 @@ export default function VeiculosScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoHome}
@@ -246,7 +245,7 @@ export default function VeiculosScreen({ navigation }) {
           <Texto style={styles.botaoTexto}>Adicionar Veículo</Texto>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -255,8 +254,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: -10,
-    paddingBottom: 20,
+    paddingVertical: 30,
   },
 
   conteudo: {
