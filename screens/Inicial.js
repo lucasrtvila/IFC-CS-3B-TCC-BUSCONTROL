@@ -57,7 +57,7 @@ export default function Inicial({ navigation }) {
   useEffect(() => {
     async function carregarUsuario() {
       try {
-        const usuarioDB = await getUsuario(); // busca no banco
+        const usuarioDB = await getUsuario();
         setUsuario(usuarioDB);
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
@@ -132,7 +132,7 @@ export default function Inicial({ navigation }) {
   };
 
   const aoSelecionarData = (event, selectedDate) => {
-    setMostrarDatePicker(Platform.OS === "ios"); // no iOS deixa aberto
+    setMostrarDatePicker(Platform.OS === "ios");
     if (selectedDate) setDataVencimento(selectedDate);
   };
 
@@ -227,6 +227,8 @@ export default function Inicial({ navigation }) {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* Botão único para Nova Viagem */}
           <TouchableOpacity
             style={styles.botaoPrincipal}
             onPress={() => navigation.navigate("NovaViagem")}
@@ -299,7 +301,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingVertical: 30, // Adiciona um respiro vertical
+    paddingVertical: 30,
   },
   header: {
     top: -10,
@@ -308,7 +310,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: width > 768 ? width * 0.1 : 16,
     alignItems: "center",
-    justifyContent: "space-between", // Distribui o espaço verticalmente
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   boasVindas: {
@@ -363,7 +365,7 @@ const styles = StyleSheet.create({
     padding: 12,
     flex: 1,
     minHeight: height * 0.23,
-    maxHeight: height * 0.23, // impede crescer demais
+    maxHeight: height * 0.23,
   },
   miniText: {
     color: "#AAB1C4",
@@ -377,6 +379,7 @@ const styles = StyleSheet.create({
     color: "orange",
     fontSize: 12,
   },
+  // Estilo para o botão único de largura total
   botaoPrincipal: {
     backgroundColor: "#0B49C1",
     paddingVertical: width > 768 ? 20 : 16,
