@@ -127,10 +127,7 @@ export default function NovaViagemScreen({ navigation }) {
       .filter((parada) => parada.alunos.length > 0)
       .sort((a, b) => a.horario.localeCompare(b.horario));
 
-    const horarioFinal =
-      paradasDaViagemComAlunos.length > 0
-        ? paradasDaViagemComAlunos[paradasDaViagemComAlunos.length - 1].horario
-        : formatarHorario(final);
+    const horarioFinal = formatarHorario(final);
 
     navigation.navigate("ViagemAtiva", {
       destino,
@@ -156,13 +153,11 @@ export default function NovaViagemScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#050a24" }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
         <ScrollView
           style={styles.safeArea}
           contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View style={styles.container}>
             <Header style={styles.header} navigation={navigation} />
@@ -335,7 +330,6 @@ export default function NovaViagemScreen({ navigation }) {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
 
       <Modal
         visible={modalAlunosVisivel}
@@ -404,19 +398,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#050a24",
   },
   container: {
-    flexGrow: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(30),
-    justifyContent: 'space-between',
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    justifyContent: "space-between",
   },
   header: {
-    paddingBottom: verticalScale(10),
+    paddingBottom: 10,
   },
   titulo: {
-    fontSize: moderateScale(28),
+    fontSize: 28,
     color: "white",
     fontWeight: "bold",
-    marginVertical: verticalScale(10),
+    marginVertical: 10,
     textAlign: "center",
   },
   content: {
@@ -424,114 +418,114 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   tipoViagemContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#1c2337',
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(20),
-    padding: scale(4),
+    flexDirection: "row",
+    backgroundColor: "#1c2337",
+    borderRadius: 12,
+    marginBottom: 20,
+    padding: 4,
   },
   tipoViagemBotao: {
     flex: 1,
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(10),
-    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
   },
   tipoViagemBotaoAtivo: {
-    backgroundColor: '#0B49C1',
+    backgroundColor: "#0B49C1",
   },
   tipoViagemTexto: {
-    color: '#AAB1C4',
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
+    color: "#AAB1C4",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   tipoViagemTextoAtivo: {
-    color: 'white',
+    color: "white",
   },
   timeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   timeInput: {
     width: "48%",
   },
   label: {
     color: "#AAB1C4",
-    fontSize: moderateScale(16),
-    marginBottom: verticalScale(8),
+    fontSize: 16,
+    marginBottom: 8,
     textAlign: "center",
   },
   inputLike: {
     backgroundColor: "#1c2337",
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(18),
+    borderRadius: 12,
+    paddingVertical: 18,
     alignItems: "center",
   },
   inputText: {
     color: "#fff",
-    fontSize: moderateScale(16),
+    fontSize: 16,
     textAlignVertical: "center",
-    opacity:0.8,
-    fontWeight:"bold",
+    opacity: 0.8,
+    fontWeight: "bold",
   },
   divider: {
     height: 1,
     backgroundColor: "#1c2337",
-    marginVertical: verticalScale(10),
+    marginVertical: 10,
   },
   detalhesTitulo: {
     color: "white",
-    fontSize: moderateScale(22),
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
     textAlign: "center",
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#1c2337",
-    borderRadius: moderateScale(12),
-    paddingHorizontal: scale(15),
-    marginBottom: verticalScale(15),
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 15,
   },
   icon: {
-    width: scale(20),
-    height: scale(20),
+    width: 20,
+    height: 20,
     resizeMode: "contain",
-    marginRight: scale(15),
+    marginRight: 15,
     tintColor: "#AAB1C4",
   },
   input: {
     flex: 1,
     color: "#fff",
-    fontSize: moderateScale(16),
-    height: verticalScale(60),
+    fontSize: 16,
+    height: 60,
     justifyContent: "center",
   },
   footerButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(20),
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   botaoCancelar: {
     backgroundColor: "#373e4f",
-    paddingVertical: verticalScale(18),
-    borderRadius: moderateScale(12),
+    paddingVertical: 18,
+    borderRadius: 12,
     width: "48%",
     alignItems: "center",
   },
   botaoIniciar: {
     backgroundColor: "#0B49C1",
-    paddingVertical: verticalScale(18),
-    borderRadius: moderateScale(12),
+    paddingVertical: 18,
+    borderRadius: 12,
     width: "48%",
     alignItems: "center",
   },
   botaoTexto: {
     color: "white",
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: "bold",
   },
   modalFundo: {
@@ -542,38 +536,38 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     backgroundColor: "#1c2337",
-    borderRadius: moderateScale(16),
-    padding: scale(20),
+    borderRadius: 16,
+    padding: 20,
     width: "90%",
     maxHeight: "80%",
   },
   modalTitulo: {
     color: "#fff",
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   alunosList: {
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   alunoItem: {
-    padding: scale(15),
+    padding: 15,
     backgroundColor: "#373e4f",
-    borderRadius: moderateScale(8),
-    marginBottom: verticalScale(10),
+    borderRadius: 8,
+    marginBottom: 10,
   },
   alunoItemSelected: {
     backgroundColor: "#0B49C1",
   },
   alunoItemText: {
     color: "#fff",
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
   botaoIniciarModal: {
     backgroundColor: "#0B49C1",
-    paddingVertical: verticalScale(15),
-    borderRadius: moderateScale(12),
+    paddingVertical: 15,
+    borderRadius: 12,
     alignItems: "center",
   },
 });
