@@ -11,7 +11,6 @@ import {
   StatusBar,
   Linking,
   Alert,
-
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import Texto from "../components/Texto";
@@ -88,20 +87,17 @@ export default function AlunosScreen({ navigation }) {
   };
 
   const abrirWhatsApp = (numero) => {
+    if (!numero || numero.trim() === "") {
+      Alert.alert("Erro", "Número de telefone inválido.");
+      return;
+    }
+      
     const apenasNumeros = numero.replace(/\D/g, "");
-    const url = `whatsapp://send?phone=55${apenasNumeros}`;
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (!supported) {
-          Alert.alert(
-            "Erro",
-            "WhatsApp não está instalado no seu dispositivo."
-          );
-        } else {
-          return Linking.openURL(url);
-        }
-      })
-      .catch((err) => console.error("Ocorreu um erro", err));
+    const url = `https://wa.me/55${apenasNumeros}`;
+
+    Linking.openURL(url).catch(() => {
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+    });
   };
 
   const abrirEdicao = (index) => {
@@ -456,7 +452,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    top: -10
+    top: -10,
   },
   semAlunosTexto: {
     color: "#ccc",
