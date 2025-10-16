@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TouchableOpacity,
@@ -12,7 +12,6 @@ import {
   Platform,
   FlatList,
   ScrollView,
-  KeyboardAvoidingView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -23,12 +22,7 @@ import { AlunosContext } from "../components/AlunosContext";
 import { ParadasContext } from "../components/ParadasContext";
 import { ViagemContext } from "../components/ViagemContext";
 
-const { width, height } = Dimensions.get("window");
-const guidelineBaseWidth = 375;
-
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / 812) * size;
-const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
+const { width } = Dimensions.get("window");
 
 const formatarData = (date) => {
   const dia = date.getDate().toString().padStart(2, "0");
@@ -47,9 +41,9 @@ export default function NovaViagemScreen({ navigation }) {
   const { veiculos } = useContext(VeiculosContext);
   const { alunos } = useContext(AlunosContext);
   const { paradas } = useContext(ParadasContext);
-  const { viagemTemplate, limparTemplate } = useContext(ViagemContext);
+  const { limparTemplate } = useContext(ViagemContext);
 
-  const [tipoViagem, setTipoViagem] = useState("ida");
+  const [tipoViagem, setTipoViagem] = useState("so_ida"); // 'so_ida' ou 'ida_e_volta'
   const [inicio, setInicio] = useState(new Date());
   const [final, setFinal] = useState(new Date());
   const [data, setData] = useState(new Date());
@@ -64,22 +58,6 @@ export default function NovaViagemScreen({ navigation }) {
 
   const [modalAlunosVisivel, setModalAlunosVisivel] = useState(false);
   const [modalVeiculosVisivel, setModalVeiculosVisivel] = useState(false);
-
-  useEffect(() => {
-    if (tipoViagem === 'volta' && viagemTemplate) {
-      setDestino(viagemTemplate.destino);
-      setVeiculoSelecionado(viagemTemplate.veiculoId);
-      
-      const alunosPreSelecionados = alunos.filter(aluno => 
-        viagemTemplate.alunosSelecionadosIds.includes(aluno.id)
-      );
-      setAlunosSelecionados(alunosPreSelecionados);
-    } else {
-        setDestino("");
-        setVeiculoSelecionado(null);
-        setAlunosSelecionados([]);
-    }
-  }, [tipoViagem, viagemTemplate]);
 
   const onChangeInicio = (event, selectedDate) => {
     setShowInicioPicker(Platform.OS === "ios");
@@ -113,9 +91,7 @@ export default function NovaViagemScreen({ navigation }) {
       return;
     }
 
-    if (tipoViagem === 'ida') {
-        limparTemplate();
-    }
+    limparTemplate(); // Limpa qualquer template anterior ao iniciar uma nova viagem
 
     const paradasDaViagemComAlunos = paradas
       .map((parada) => ({
@@ -127,14 +103,15 @@ export default function NovaViagemScreen({ navigation }) {
       .filter((parada) => parada.alunos.length > 0)
       .sort((a, b) => a.horario.localeCompare(b.horario));
 
-    const horarioFinal = formatarHorario(final);
+    const horarioFinalFormatado = formatarHorario(final);
 
     navigation.navigate("ViagemAtiva", {
       destino,
-      horarioFinal,
+      horarioFinal: horarioFinalFormatado,
       paradasDaViagem: paradasDaViagemComAlunos,
       veiculoId: veiculoSelecionado,
-      tipoViagem: tipoViagem,
+      tipoViagem: tipoViagem, // Passa o tipo de viagem
+      alunosSelecionadosIds: alunosSelecionados.map(a => a.id), // Passa os IDs para o template
     });
   };
   
@@ -157,7 +134,6 @@ export default function NovaViagemScreen({ navigation }) {
           style={styles.safeArea}
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
         >
           <View style={styles.container}>
             <Header style={styles.header} navigation={navigation} />
@@ -168,33 +144,33 @@ export default function NovaViagemScreen({ navigation }) {
                 <TouchableOpacity
                   style={[
                     styles.tipoViagemBotao,
-                    tipoViagem === "ida" && styles.tipoViagemBotaoAtivo,
+                    tipoViagem === "so_ida" && styles.tipoViagemBotaoAtivo,
                   ]}
-                  onPress={() => setTipoViagem("ida")}
+                  onPress={() => setTipoViagem("so_ida")}
                 >
                   <Texto
                     style={[
                       styles.tipoViagemTexto,
-                      tipoViagem === "ida" && styles.tipoViagemTextoAtivo,
+                      tipoViagem === "so_ida" && styles.tipoViagemTextoAtivo,
                     ]}
                   >
-                    Ida
+                    Só Ida
                   </Texto>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.tipoViagemBotao,
-                    tipoViagem === "volta" && styles.tipoViagemBotaoAtivo,
+                    tipoViagem === "ida_e_volta" && styles.tipoViagemBotaoAtivo,
                   ]}
-                  onPress={() => setTipoViagem("volta")}
+                  onPress={() => setTipoViagem("ida_e_volta")}
                 >
                   <Texto
                     style={[
                       styles.tipoViagemTexto,
-                      tipoViagem === "volta" && styles.tipoViagemTextoAtivo,
+                      tipoViagem === "ida_e_volta" && styles.tipoViagemTextoAtivo,
                     ]}
                   >
-                    Volta
+                    Ida e Volta
                   </Texto>
                 </TouchableOpacity>
               </View>

@@ -13,6 +13,8 @@ import ConfiguracoesScreen from "./screens/Configuracoes";
 import RotaScreen from "./screens/Rota";
 import NovaViagemScreen from "./screens/NovaViagem.js";
 import ViagemAtivaScreen from "./screens/ViagemAtiva.js";
+import ListaPresencaScreen from "./screens/ListaPresenca.js";
+import HistoricoViagensScreen from "./screens/HistoricoViagens.js"; // Importa a nova tela
 
 // Contextos
 import { VeiculosProvider } from "./components/VeiculosContext";
@@ -34,7 +36,6 @@ export default function App() {
   useEffect(() => {
     async function setupDB() {
       try {
-      /*  await resetDatabase(); // limpa o banco para testes*/
         await initDB();
         await migrateDatabase();
         const usuario = await getUsuario();
@@ -75,6 +76,8 @@ export default function App() {
                   <Stack.Screen name="Rota" component={RotaScreen} />
                   <Stack.Screen name="NovaViagem" component={NovaViagemScreen} />
                   <Stack.Screen name="ViagemAtiva" component={ViagemAtivaScreen} />
+                  <Stack.Screen name="ListaPresenca" component={ListaPresencaScreen} />
+                  <Stack.Screen name="HistoricoViagens" component={HistoricoViagensScreen} />
                   <Stack.Screen
                     name="Configuracoes"
                     component={ConfiguracoesScreen}

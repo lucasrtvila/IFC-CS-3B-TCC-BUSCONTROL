@@ -13,16 +13,21 @@ import {
 import Texto from "../components/Texto";
 import Header from "../components/Header";
 import { ViagemContext } from "../components/ViagemContext";
+import { addViagem } from "../database/database"; // Importa a função
 
 const { width } = Dimensions.get("window");
 
 export default function ViagemAtivaScreen({ route, navigation }) {
-  // Recebe os dados da viagem da tela anterior
-  const { destino, horarioFinal, paradasDaViagem, veiculoId, tipoViagem } =
-    route.params;
+  const {
+    destino,
+    horarioFinal,
+    paradasDaViagem,
+    veiculoId,
+    tipoViagem,
+    alunosSelecionadosIds,
+  } = route.params;
 
-  // Obtém a função do contexto para salvar o template
-  const { salvarViagemComoTemplate } = useContext(ViagemContext);
+  const { salvarViagemComoTemplate, limparTemplate } = useContext(ViagemContext);
 
   const [duracao, setDuracao] = useState(0);
   const [modalAlunosVisivel, setModalAlunosVisivel] = useState(false);
@@ -32,7 +37,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
   const [paradaSelecionadaId, setParadaSelecionadaId] = useState(null);
   const [paradasAtivas, setParadasAtivas] = useState(paradasDaViagem);
 
-  // Efeito para o timer da duração da viagem
   useEffect(() => {
     const timer = setInterval(() => {
       setDuracao((prev) => prev + 1);
@@ -48,32 +52,43 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     return `${minutos}:${segundos}`;
   };
 
-  const encerrarViagem = () => {
-    // Se for uma viagem de "Ida", salva os dados como um modelo para a "Volta"
-    if (tipoViagem === "ida") {
-      const alunosSelecionadosIds = paradasDaViagem.flatMap((p) =>
-        p.alunos.map((a) => a.id)
-      );
+  const handleEncerramento = async () => {
+    const duracaoFormatada = formatarDuracao(duracao);
+    const dataViagem = new Date().toLocaleDateString('pt-BR');
+    const todosAlunos = paradasDaViagem.flatMap(p => p.alunos.map(a => a.nome));
 
+    let historicoId = null;
+    try {
+      const result = await addViagem(dataViagem, destino, duracaoFormatada, veiculoId, todosAlunos, tipoViagem);
+      historicoId = result.lastInsertRowId;
+    } catch (error) {
+      console.error("Erro ao salvar viagem no histórico:", error);
+    }
+
+    if (tipoViagem === "ida_e_volta") {
       const template = {
         destino,
         veiculoId,
         alunosSelecionadosIds,
+        tipoViagem,
+        historicoId, // Salva o ID da viagem de ida
       };
       salvarViagemComoTemplate(template);
+      Alert.alert("Ida Concluída", "A viagem de ida foi encerrada. Você pode iniciar a volta pela tela inicial.");
+    } else {
+      limparTemplate();
     }
-
     navigation.navigate("Inicial");
   };
 
-  // Abre o modal para visualizar os alunos de uma parada específica
   const verAlunosDaParada = (parada) => {
     setAlunosNaParada(parada.alunos || []);
     setParadaSelecionadaNome(parada.nome);
-    setParadaSelecionadaId(parada.id); 
-    setAlunosEmbarcadosTemp(parada.alunos.map(a => a.id)); 
+    setParadaSelecionadaId(parada.id);
+    setAlunosEmbarcadosTemp(parada.alunos.map((a) => a.id));
     setModalAlunosVisivel(true);
   };
+
   const toggleAlunoSelecao = (alunoId) => {
     setAlunosEmbarcadosTemp((prevIds) => {
       if (prevIds.includes(alunoId)) {
@@ -85,7 +100,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
   };
 
   const handleConcluirParada = () => {
-    // Alerta de confirmação
     Alert.alert(
       `Confirmar embarque?`,
       `Confirma a conclusão da parada? Essa ação não pode ser desfeita.`,
@@ -93,20 +107,17 @@ export default function ViagemAtivaScreen({ route, navigation }) {
         { text: "Cancelar", style: "cancel" },
         {
           text: "Confirmar",
-         onPress: () => {
-            setParadasAtivas((prevParadas) => {
-                const paradaRemoverId = Number(paradaSelecionadaId);
-                return [...prevParadas].filter(p => 
-                    Number(p.id) !== paradaRemoverId
-                );
-            });
+          onPress: () => {
+            setParadasAtivas((prevParadas) =>
+              prevParadas.filter((p) => p.id !== paradaSelecionadaId)
+            );
             setModalAlunosVisivel(false);
           },
         },
       ]
     );
   };
-  // Componente para renderizar cada parada na lista
+
   const renderParada = ({ item }) => (
     <TouchableOpacity
       style={styles.cardParada}
@@ -157,15 +168,20 @@ export default function ViagemAtivaScreen({ route, navigation }) {
             ListEmptyComponent={
               <View style={{ alignItems: "center", marginTop: 50 }}>
                 <Texto style={{ color: "#AAB1C4", fontSize: 16 }}>
-                  Nenhuma parada nesta viagem.
+                  Nenhuma parada restante.
                 </Texto>
               </View>
             }
           />
         </View>
 
-        <TouchableOpacity style={styles.botaoEncerrar} onPress={encerrarViagem}>
-          <Texto style={styles.botaoTexto}>Encerrar Viagem</Texto>
+        <TouchableOpacity
+          style={styles.botaoEncerrar}
+          onPress={handleEncerramento}
+        >
+          <Texto style={styles.botaoTexto}>
+            {tipoViagem === "ida_e_volta" ? "Encerrar Ida" : "Encerrar Viagem"}
+          </Texto>
         </TouchableOpacity>
 
         <Modal visible={modalAlunosVisivel} animationType="fade" transparent>
@@ -186,31 +202,17 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                     onPress={() => toggleAlunoSelecao(item.id)}
                     key={item.id}
                   >
-                    <Texto
-                      style={[
-                        styles.alunoItemText,
-                        alunosEmbarcadosTemp.includes(item.id) && {
-                          color: "#fff",
-                        },
-                      ]}
-                    >
-                      {item.nome}
-                    </Texto>
+                    <Texto style={styles.alunoItemText}>{item.nome}</Texto>
                   </TouchableOpacity>
                 )}
                 keyExtractor={(item) => item.id.toString()}
                 style={styles.alunosList}
-                ListEmptyComponent={() => (
-                  <Texto style={styles.semAlunosTexto}>
-                    Nenhum aluno nesta parada.
-                  </Texto>
-                )}
               />
               <TouchableOpacity
                 style={styles.botaoFecharModal}
                 onPress={handleConcluirParada}
               >
-                <Texto style={styles.botaoTexto}>Fechar</Texto>
+                <Texto style={styles.botaoTexto}>Concluir Parada</Texto>
               </TouchableOpacity>
             </View>
           </View>
@@ -221,150 +223,147 @@ export default function ViagemAtivaScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#050a24",
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-  },
-  content: {
-    flex: 1,
-  },
-  titulo: {
-    color: "#246BFD",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 20,
-    borderWidth: 1,
-    borderColor: "#246BFD",
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  metricasContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 30,
-  },
-  metricaBox: {
-    backgroundColor: "#1c2337",
-    borderRadius: 15,
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    alignItems: "center",
-    width: "45%",
-  },
-  metricaLabel: {
-    color: "#AAB1C4",
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  metricaValor: {
-    color: "white",
-    fontSize: 32,
-    fontWeight: "bold",
-  },
-  subtitulo: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  cardParada: {
-    backgroundColor: "#1c2337",
-    borderRadius: 15,
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  cardParadaEsquerda: {
-    flex: 1,
-  },
-  nomeParada: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  verAlunos: {
-    color: "#AAB1C4",
-    fontSize: 14,
-    marginTop: 4,
-  },
-  cardParadaDireita: {
-    alignItems: "center",
-  },
-  horaPrevLabel: {
-    color: "#AAB1C4",
-    fontSize: 14,
-  },
-  horaPrevValor: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-  botaoEncerrar: {
-    backgroundColor: "#c41628ff",
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  botaoTexto: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  modalFundo: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  modalBox: {
-    backgroundColor: "#1c2337",
-    borderRadius: 16,
-    padding: 20,
-    width: "90%",
-    maxHeight: "80%",
-  },
-  modalTitulo: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  alunosList: {
-    marginBottom: 20,
-  },
-  alunoItem: {
-    padding: 15,
-    backgroundColor: "#373e4f",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  alunoItemText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  semAlunosTexto: {
-    color: "#AAB1C4",
-    textAlign: "center",
-    marginVertical: 20,
-  },
-  botaoFecharModal: {
-    backgroundColor: "#0B49C1",
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  alunoItemSelected: {
-    backgroundColor: "#1E40AF", // Cor azul para o aluno selecionado
-    borderRadius: 8,
-    marginHorizontal: 5,
-    marginVertical: 2,
-  },
+    container: {
+        flex: 1,
+        backgroundColor: "#050a24",
+        paddingHorizontal: 20,
+        paddingVertical: 30,
+      },
+      content: {
+        flex: 1,
+      },
+      titulo: {
+        color: "#246BFD",
+        fontSize: 20,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginVertical: 20,
+        borderWidth: 1,
+        borderColor: "#246BFD",
+        paddingVertical: 8,
+        borderRadius: 8,
+      },
+      metricasContainer: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginBottom: 30,
+      },
+      metricaBox: {
+        backgroundColor: "#1c2337",
+        borderRadius: 15,
+        paddingVertical: 20,
+        paddingHorizontal: 30,
+        alignItems: "center",
+        width: "45%",
+      },
+      metricaLabel: {
+        color: "#AAB1C4",
+        fontSize: 16,
+        marginBottom: 5,
+      },
+      metricaValor: {
+        color: "white",
+        fontSize: 32,
+        fontWeight: "bold",
+      },
+      subtitulo: {
+        color: "white",
+        fontSize: 22,
+        fontWeight: "bold",
+        marginBottom: 15,
+      },
+      cardParada: {
+        backgroundColor: "#1c2337",
+        borderRadius: 15,
+        padding: 20,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 15,
+      },
+      cardParadaEsquerda: {
+        flex: 1,
+      },
+      nomeParada: {
+        color: "white",
+        fontSize: 20,
+        fontWeight: "bold",
+      },
+      verAlunos: {
+        color: "#AAB1C4",
+        fontSize: 14,
+        marginTop: 4,
+      },
+      cardParadaDireita: {
+        alignItems: "center",
+      },
+      horaPrevLabel: {
+        color: "#AAB1C4",
+        fontSize: 14,
+      },
+      horaPrevValor: {
+        color: "white",
+        fontSize: 22,
+        fontWeight: "bold",
+        marginTop: 4,
+      },
+      botaoEncerrar: {
+        backgroundColor: "#c41628ff",
+        paddingVertical: 18,
+        borderRadius: 16,
+        alignItems: "center",
+        marginTop: 20,
+      },
+      botaoTexto: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "bold",
+      },
+      modalFundo: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.7)",
+      },
+      modalBox: {
+        backgroundColor: "#1c2337",
+        borderRadius: 16,
+        padding: 20,
+        width: "90%",
+        maxHeight: "80%",
+      },
+      modalTitulo: {
+        color: "#fff",
+        fontSize: 20,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 20,
+      },
+      alunosList: {
+        marginBottom: 20,
+      },
+      alunoItem: {
+        padding: 15,
+        backgroundColor: "#373e4f",
+        borderRadius: 8,
+        marginBottom: 10,
+      },
+      alunoItemText: {
+        color: "#fff",
+        fontSize: 16,
+      },
+      semAlunosTexto: {
+        color: "#AAB1C4",
+        textAlign: "center",
+        marginVertical: 20,
+      },
+      botaoFecharModal: {
+        backgroundColor: "#0B49C1",
+        paddingVertical: 15,
+        borderRadius: 12,
+        alignItems: "center",
+      },
+      alunoItemSelected: {
+        backgroundColor: "#1E40AF",
+      },
 });

@@ -39,6 +39,7 @@ export async function migrateDatabase() {
         alunos: ['telefone', 'cpf'],
         paradas: ['horario'],
         lembretes: ['hora'],
+        viagens_historico: ['tipoViagem', 'alunos_volta'], // Adiciona a nova coluna
       };
 
       for (const tabela in colunasParaAdicionar) {
@@ -69,7 +70,7 @@ export async function resetDatabase() {
     console.log("⚠️  RESETANDO BANCO - TODOS OS DADOS SERÃO PERDIDOS!");
     const database = await getDB();
     try {
-      const tabelas = ['alunos', 'veiculos', 'paradas', 'lembretes', 'mensalidades', 'usuarios'];
+      const tabelas = ['alunos', 'veiculos', 'paradas', 'lembretes', 'mensalidades', 'usuarios', 'viagens_historico'];
       for (const tabela of tabelas) {
         await database.execAsync(`DROP TABLE IF EXISTS ${tabela};`);
       }
@@ -95,6 +96,7 @@ export async function initDB(isReset = false) {
         CREATE TABLE IF NOT EXISTS lembretes (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, data TEXT NOT NULL, hora TEXT);
         CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS mensalidades (valor REAL NOT NULL, dataVencimento TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS viagens_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, destino TEXT, duracao TEXT, veiculoId INTEGER, alunos TEXT, tipoViagem TEXT, alunos_volta TEXT);
       `);
       if (!isReset) console.log("✅ Tabelas verificadas/criadas com sucesso!");
       return true;
@@ -104,6 +106,33 @@ export async function initDB(isReset = false) {
     }
   });
 }
+
+// --- Funções CRUD (Viagens) ---
+
+export async function addViagem(data, destino, duracao, veiculoId, alunos, tipoViagem) {
+    const database = await getDB();
+    const alunosJSON = JSON.stringify(alunos);
+    // Retorna o resultado do 'run', que inclui o lastInsertRowId
+    return await database.runAsync(
+      "INSERT INTO viagens_historico (data, destino, duracao, veiculoId, alunos, tipoViagem) VALUES (?, ?, ?, ?, ?, ?)",
+      [data, destino, duracao, veiculoId, alunosJSON, tipoViagem]
+    );
+}
+
+export async function updateViagemVolta(viagemId, alunosVolta) {
+    const database = await getDB();
+    const alunosVoltaJSON = JSON.stringify(alunosVolta);
+    return await database.runAsync(
+        "UPDATE viagens_historico SET alunos_volta = ? WHERE id = ?",
+        [alunosVoltaJSON, viagemId]
+    );
+}
+
+export async function getViagens() {
+    const database = await getDB();
+    return await database.getAllAsync("SELECT * FROM viagens_historico");
+}
+
 
 // --- Funções CRUD (Veiculos, Alunos, Paradas, etc.) ---
 

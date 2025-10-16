@@ -6,21 +6,29 @@ const { width } = Dimensions.get("window");
 export default function Header({ navigation, style }) {
   return (
     <View style={[styles.header, style]}>
-                <View style={styles.headerPlaceholder} />
-                <Image
-                  source={require("../assets/logoinicial.png")}
-                  style={styles.logo}
-                />
-                <TouchableOpacity
-                  style={styles.configButton}
-                  onPress={() => navigation.navigate("Configuracoes")}
-                >
-                  <Image
-                    source={require("../assets/configuracoes.png")}
-                    style={styles.configIcon}
-                  />
-                </TouchableOpacity>
-              </View>
+      <TouchableOpacity
+        style={styles.historyButton}
+        onPress={() => navigation.navigate("HistoricoViagens")}
+      >
+        <Image
+          source={require("../assets/historico.png")} // Certifique-se de ter este ícone
+          style={styles.historyIcon}
+        />
+      </TouchableOpacity>
+      <Image
+        source={require("../assets/logoinicial.png")}
+        style={styles.logo}
+      />
+      <TouchableOpacity
+        style={styles.configButton}
+        onPress={() => navigation.navigate("Configuracoes")}
+      >
+        <Image
+          source={require("../assets/configuracoes.png")}
+          style={styles.configIcon}
+        />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -32,10 +40,15 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 10,
   },
-  headerPlaceholder: {
-    width: 48,
+  historyButton: {
+    padding: 10,
   },
-    configButton: {
+  historyIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: "contain",
+  },
+  configButton: {
     padding: 10,
   },
   configIcon: {

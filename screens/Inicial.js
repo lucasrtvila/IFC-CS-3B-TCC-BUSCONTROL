@@ -16,9 +16,9 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
+import { ViagemContext } from "../components/ViagemContext";
 
-import { getUsuario } from "../database/database";
-import { salvarMensalidade, getMensalidade } from "../database/database";
+import { getUsuario, salvarMensalidade, getMensalidade } from "../database/database";
 
 import Texto from "../components/Texto";
 import BarraNavegacao from "../components/BarraNavegacao";
@@ -27,6 +27,7 @@ import Header from "../components/Header";
 const { width, height } = Dimensions.get("window");
 
 function formatarData(data) {
+  if (!data) return "";
   const dia = data.getDate().toString().padStart(2, "0");
   const mes = (data.getMonth() + 1).toString().padStart(2, "0");
   const ano = data.getFullYear();
@@ -41,11 +42,11 @@ export default function Inicial({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [novoValorMensalidade, setNovoValorMensalidade] = useState("");
   const [dataVencimento, setDataVencimento] = useState(new Date());
-  const [dataInput, setDataInput] = useState(formatarData(new Date()));
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
 
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
+  const { viagemDeVoltaPendente } = useContext(ViagemContext);
 
   useEffect(() => {
     const hora = new Date().getHours();
@@ -55,15 +56,21 @@ export default function Inicial({ navigation }) {
   }, []);
 
   useEffect(() => {
-    async function carregarUsuario() {
+    async function carregarDados() {
       try {
         const usuarioDB = await getUsuario();
         setUsuario(usuarioDB);
+
+        const mensalidadeBanco = await getMensalidade();
+        if (mensalidadeBanco) {
+          setMensalidade(mensalidadeBanco.valor);
+          setDataVencimento(new Date(mensalidadeBanco.dataVencimento));
+        }
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
+        console.error("Erro ao buscar dados:", error);
       }
     }
-    carregarUsuario();
+    carregarDados();
   }, []);
 
   useEffect(() => {
@@ -87,30 +94,16 @@ export default function Inicial({ navigation }) {
           setLocalizacao("Local não encontrado");
         }
       } catch (error) {
-        console.error("Erro ao obter localização:", error);
         setLocalizacao("Erro ao obter localização");
       }
     };
-
     obterLocalizacao();
-  }, []);
-
-  useEffect(() => {
-    async function carregarMensalidade() {
-      const mensalidadeBanco = await getMensalidade();
-      if (mensalidadeBanco) {
-        setMensalidade(mensalidadeBanco.valor);
-        setDataVencimento(new Date(mensalidadeBanco.dataVencimento));
-      }
-    }
-    carregarMensalidade();
   }, []);
 
   const abrirModalMensalidade = () => {
     setMostrarDatePicker(false);
-    setNovoValorMensalidade("");
+    setNovoValorMensalidade(mensalidade.toString());
     setModalVisible(true);
-    setDataInput(formatarData(dataVencimento));
   };
 
   const salvarMensalidadeHandler = async () => {
@@ -127,16 +120,18 @@ export default function Inicial({ navigation }) {
     }
   };
 
-  const abrirDatePicker = () => {
-    setMostrarDatePicker(true);
-  };
-
   const aoSelecionarData = (event, selectedDate) => {
     setMostrarDatePicker(Platform.OS === "ios");
     if (selectedDate) setDataVencimento(selectedDate);
   };
 
-  const nomeUsuario = usuario?.nome || "Usuário";
+  const handleBotaoPrincipal = () => {
+    if (viagemDeVoltaPendente) {
+      navigation.navigate("ListaPresenca");
+    } else {
+      navigation.navigate("NovaViagem");
+    }
+  };
 
   return (
     <>
@@ -146,7 +141,7 @@ export default function Inicial({ navigation }) {
           <Header style={styles.header} navigation={navigation} />
           <Texto style={styles.boasVindas}>
             {saudacao}
-            <Texto style={styles.nome}>{nomeUsuario}</Texto>
+            <Texto style={styles.nome}>{usuario?.nome || "Usuário"}</Texto>
           </Texto>
 
           <View style={styles.cardsContainer}>
@@ -154,7 +149,6 @@ export default function Inicial({ navigation }) {
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Você está em</Texto>
                 <Texto style={styles.cardTextBold}>{localizacao}</Texto>
-                <Texto style={styles.cardSub}>Ver minha localização</Texto>
               </View>
             </TouchableOpacity>
 
@@ -183,10 +177,8 @@ export default function Inicial({ navigation }) {
               ) : (
                 veiculos.slice(0, 3).map((v) => (
                   <View key={v.id} style={{ marginBottom: 6 }}>
-                    <Texto style={styles.miniText}>
-                      {v.nome.length > 18
-                        ? v.nome.slice(0, 15) + "..."
-                        : v.nome}
+                    <Texto style={styles.miniText} numberOfLines={1}>
+                      {v.nome}
                     </Texto>
                     <Texto
                       style={
@@ -214,10 +206,8 @@ export default function Inicial({ navigation }) {
               ) : (
                 lembretes.slice(0, 3).map((l) => (
                   <View key={l.id} style={{ marginBottom: 6 }}>
-                    <Texto style={styles.miniText}>
-                      {l.titulo.length > 18
-                        ? l.titulo.slice(0, 15) + "..."
-                        : l.titulo}
+                    <Texto style={styles.miniText} numberOfLines={1}>
+                      {l.titulo}
                     </Texto>
                     <Texto style={{ color: "#AAB1C4", fontSize: 12 }}>
                       {l.data} - {l.hora}
@@ -228,12 +218,13 @@ export default function Inicial({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Botão único para Nova Viagem */}
           <TouchableOpacity
             style={styles.botaoPrincipal}
-            onPress={() => navigation.navigate("NovaViagem")}
+            onPress={handleBotaoPrincipal}
           >
-            <Texto style={styles.botaoText}>Nova Viagem</Texto>
+            <Texto style={styles.botaoText}>
+              {viagemDeVoltaPendente ? "Iniciar Volta" : "Nova Viagem"}
+            </Texto>
           </TouchableOpacity>
         </View>
 
@@ -241,8 +232,6 @@ export default function Inicial({ navigation }) {
           <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
               <Texto style={styles.modalTitle}>Editar Mensalidade</Texto>
-
-              <Texto style={styles.label}>Valor</Texto>
               <TextInput
                 style={styles.input}
                 placeholder="Novo valor"
@@ -251,28 +240,22 @@ export default function Inicial({ navigation }) {
                 value={novoValorMensalidade}
                 onChangeText={setNovoValorMensalidade}
               />
-
-              <Texto style={styles.label}>Data de Vencimento</Texto>
               <TouchableOpacity
-                onPress={abrirDatePicker}
-                style={styles.inputData}
+                onPress={() => setMostrarDatePicker(true)}
+                style={styles.input}
               >
-                <Texto
-                  style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}
-                >
-                  {formatarData(dataVencimento)}
+                <Texto style={{ color: "#fff" }}>
+                  Vencimento: {formatarData(dataVencimento)}
                 </Texto>
               </TouchableOpacity>
-
               {mostrarDatePicker && (
                 <DateTimePicker
                   value={dataVencimento}
                   mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  display="default"
                   onChange={aoSelecionarData}
                 />
               )}
-
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
@@ -298,160 +281,145 @@ export default function Inicial({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#050a24",
-    paddingVertical: 30,
-  },
-  header: {
-    top: -10,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: width > 768 ? width * 0.1 : 16,
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  boasVindas: {
-    color: "white",
-    fontSize: width > 768 ? 24 : 20,
-    textAlign: "center",
-    top: -25,
-  },
-  nome: {
-    fontWeight: "bold",
-  },
-  cardsContainer: {
-    gap: 18,
-    width: "100%",
-  },
-  card: {
-    backgroundColor: "#1c2337",
-    borderRadius: 16,
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.04,
-    justifyContent: "center",
-  },
-  cardCenterContent: {
-    alignItems: "center",
-  },
-  cardTitle: {
-    color: "white",
-    fontSize: 16,
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  cardTextBold: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  cardSub: {
-    color: "#AAB1C4",
-    fontSize: 14,
-    marginTop: 2,
-  },
-  grid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    width: "100%",
-  },
-  miniCard: {
-    backgroundColor: "#1c2337",
-    borderRadius: 16,
-    padding: 12,
-    flex: 1,
-    minHeight: height * 0.23,
-    maxHeight: height * 0.23,
-  },
-  miniText: {
-    color: "#AAB1C4",
-    fontSize: 16,
-  },
-  statusAtivo: {
-    color: "limegreen",
-    fontSize: 12,
-  },
-  statusManutencao: {
-    color: "orange",
-    fontSize: 12,
-  },
-  // Estilo para o botão único de largura total
-  botaoPrincipal: {
-    backgroundColor: "#0B49C1",
-    paddingVertical: width > 768 ? 20 : 16,
-    borderRadius: 16,
-    alignItems: "center",
-    width: "100%",
-    marginTop: 30,
-  },
-  botaoText: {
-    color: "white",
-    fontSize: width > 768 ? 24 : 20,
-    fontWeight: "bold",
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  modalContainer: {
-    backgroundColor: "#1C1F2E",
-    borderRadius: 16,
-    padding: 20,
-  },
-  modalTitle: {
-    color: "white",
-    fontSize: 20,
-    textAlign: "center",
-    marginBottom: 10,
-    fontWeight: "bold",
-  },
-  input: {
-    backgroundColor: "#373e4f",
-    color: "#fff",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 18,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    marginTop: 20,
-    gap: 10,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  saveButton: {
-    backgroundColor: "#0B49C1",
-  },
-  cancelButton: {
-    backgroundColor: "#373e4f",
-  },
-  modalButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  inputData: {
-    backgroundColor: "#373e4f",
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    justifyContent: "center",
-  },
-  label: {
-    color: "#fff",
-    fontSize: 16,
-    marginBottom: 8,
-    marginTop: 10,
-  },
+    safeArea: {
+      flex: 1,
+      backgroundColor: "#050a24",
+      paddingTop: 30,
+    },
+    header: {
+      top: -10,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: width > 768 ? width * 0.1 : 16,
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    boasVindas: {
+      color: "white",
+      fontSize: width > 768 ? 24 : 20,
+      textAlign: "center",
+      top: -25,
+    },
+    nome: {
+      fontWeight: "bold",
+    },
+    cardsContainer: {
+      gap: 18,
+      width: "100%",
+    },
+    card: {
+      backgroundColor: "#1c2337",
+      borderRadius: 16,
+      paddingVertical: height * 0.02,
+      paddingHorizontal: width * 0.04,
+      justifyContent: "center",
+    },
+    cardCenterContent: {
+      alignItems: "center",
+    },
+    cardTitle: {
+      color: "white",
+      fontSize: 16,
+      marginBottom: 2,
+      textAlign: "center",
+    },
+    cardTextBold: {
+      color: "white",
+      fontSize: 16,
+      fontWeight: "bold",
+      marginBottom: 2,
+    },
+    cardSub: {
+      color: "#AAB1C4",
+      fontSize: 14,
+      marginTop: 2,
+    },
+    grid: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 12,
+      width: "100%",
+    },
+    miniCard: {
+      backgroundColor: "#1c2337",
+      borderRadius: 16,
+      padding: 12,
+      flex: 1,
+      minHeight: height * 0.23,
+    },
+    miniText: {
+      color: "#AAB1C4",
+      fontSize: 16,
+    },
+    statusAtivo: {
+      color: "limegreen",
+      fontSize: 12,
+    },
+    statusManutencao: {
+      color: "orange",
+      fontSize: 12,
+    },
+    botaoPrincipal: {
+      backgroundColor: "#0B49C1",
+      paddingVertical: width > 768 ? 20 : 16,
+      borderRadius: 16,
+      alignItems: "center",
+      width: "100%",
+      marginTop: 30,
+    },
+    botaoText: {
+      color: "white",
+      fontSize: width > 768 ? 24 : 20,
+      fontWeight: "bold",
+    },
+    modalBackground: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      paddingHorizontal: 20,
+    },
+    modalContainer: {
+      backgroundColor: "#1C1F2E",
+      borderRadius: 16,
+      padding: 20,
+    },
+    modalTitle: {
+      color: "white",
+      fontSize: 20,
+      textAlign: "center",
+      marginBottom: 10,
+      fontWeight: "bold",
+    },
+    input: {
+      backgroundColor: "#373e4f",
+      color: "#fff",
+      borderRadius: 8,
+      padding: 10,
+      fontSize: 18,
+      marginBottom: 10,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      marginTop: 20,
+      gap: 10,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 16,
+      borderRadius: 16,
+      alignItems: "center",
+    },
+    saveButton: {
+      backgroundColor: "#0B49C1",
+    },
+    cancelButton: {
+      backgroundColor: "#373e4f",
+    },
+    modalButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
 });
