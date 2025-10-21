@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import {
-  View,
+  View, // Alterado de SafeAreaView
   TouchableOpacity,
   Modal,
   TextInput,
@@ -11,7 +11,6 @@ import {
   StatusBar,
   Linking,
   Alert,
-  SafeAreaView,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { useFocusEffect } from "@react-navigation/native";
@@ -228,12 +227,24 @@ export default function AlunosScreen({ navigation }) {
     setModalAdicionarVisivel(true);
   };
 
+  const handleRemoverAluno = () => {
+      if (alunoSelecionado) {
+           const index = alunos.findIndex(a => a.id === alunoSelecionado.id);
+           if (index !== -1) {
+                setModalEditarVisivel(false);
+                setModalDetalhesVisivel(false);
+                removerAluno(index);
+           }
+      }
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
         <View style={styles.content}>
-          <Header navigation={navigation} />
+          {/* AQUI ESTÁ A MUDANÇA (1/2) */}
+          <Header navigation={navigation} style={styles.header} />
           <Texto style={styles.titulo}>Alunos</Texto>
 
           <View style={styles.botoesTopoContainer}>
@@ -268,14 +279,11 @@ export default function AlunosScreen({ navigation }) {
                     {paradas.find((p) => p.id === item.paradaId)?.nome || "N/A"}
                   </Texto>
                 </View>
+                {/* ******************************************************
+                  * AQUI ESTÁ A MUDANÇA SOLICITADA
+                  ******************************************************
+                */}
                 <View style={styles.ladoDireito}>
-                  <Texto
-                    style={
-                      item.status === "Pago" ? styles.pago : styles.naoPago
-                    }
-                  >
-                    {item.status}
-                  </Texto>
                   {item.telefone && (
                     <TouchableOpacity
                       style={styles.botaoWhatsapp}
@@ -287,7 +295,18 @@ export default function AlunosScreen({ navigation }) {
                       />
                     </TouchableOpacity>
                   )}
+                  <Texto
+                    style={
+                      item.status === "Pago" ? styles.pago : styles.naoPago
+                    }
+                  >
+                    {item.status}
+                  </Texto>
                 </View>
+                {/* ******************************************************
+                  * FIM DA MUDANÇA
+                  ******************************************************
+                */}
               </TouchableOpacity>
             )}
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -573,18 +592,14 @@ export default function AlunosScreen({ navigation }) {
             </View>
             <TouchableOpacity
               style={styles.botaoExcluir}
-              onPress={() => {
-                setModalEditarVisivel(false);
-                const index = alunos.findIndex(a => a.id === alunoSelecionado.id);
-                removerAluno(index);
-              }}
+              onPress={handleRemoverAluno}
             >
               <Texto style={styles.botaoModalTexto}>Excluir Aluno</Texto>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -592,18 +607,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
+    paddingTop: 30,
+    paddingVertical: 30, // Adicionado padding vertical
   },
   container: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingTop: 30,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
+  // AQUI ESTÁ A MUDANÇA (2/2)
   header: {
     alignItems: "center",
+    marginTop: -10, // Move o header para CIMA
+    marginBottom: 5, // Ajusta o espaço antes do título
   },
   titulo: {
     fontSize: width > 768 ? 28 : 24,
@@ -675,8 +694,7 @@ const styles = StyleSheet.create({
       borderRadius: 16,
       alignItems: "center",
       width: "100%",
-      marginTop: 10,
-    marginBottom: 15, // Ajustado para descer um pouco mais
+      marginTop: 20,
   },
   botaoTexto: {
     color: "white",

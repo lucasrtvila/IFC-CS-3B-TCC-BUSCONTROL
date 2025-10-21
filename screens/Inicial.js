@@ -4,21 +4,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert,
-  TextInput,
-  Modal,
+  Alert, // Mantido caso necessário em outros lugares
+  // TextInput removido
+  // Modal removido
   Dimensions,
   StatusBar,
-  Platform,
+  Platform, // Mantido caso necessário
 } from "react-native";
 import * as Location from "expo-location";
-import DateTimePicker from "@react-native-community/datetimepicker";
+// DateTimePicker removido
 
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
 import { ViagemContext } from "../components/ViagemContext";
 
-import { getUsuario, salvarMensalidade, getMensalidade } from "../database/database";
+import { getUsuario, getMensalidade } from "../database/database"; // Remover salvarMensalidade daqui
 
 import Texto from "../components/Texto";
 import BarraNavegacao from "../components/BarraNavegacao";
@@ -37,12 +37,11 @@ function formatarData(data) {
 export default function Inicial({ navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [localizacao, setLocalizacao] = useState("Buscando...");
-  const [mensalidade, setMensalidade] = useState(380.0);
   const [saudacao, setSaudacao] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [novoValorMensalidade, setNovoValorMensalidade] = useState("");
-  const [dataVencimento, setDataVencimento] = useState(new Date());
-  const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
+  // Estado apenas para exibir o valor carregado
+  const [valorMensalidadeExibido, setValorMensalidadeExibido] = useState("0");
+  const [dataVencimentoExibida, setDataVencimentoExibida] = useState(new Date());
+
 
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
@@ -63,8 +62,18 @@ export default function Inicial({ navigation }) {
 
         const mensalidadeBanco = await getMensalidade();
         if (mensalidadeBanco) {
-          setMensalidade(mensalidadeBanco.valor);
-          setDataVencimento(new Date(mensalidadeBanco.dataVencimento));
+          setValorMensalidadeExibido(mensalidadeBanco.valor.toFixed(2));
+          // Convertendo a string YYYY-MM-DD para Date para exibição
+          const parts = mensalidadeBanco.dataVencimento.split('-');
+          if (parts.length === 3) {
+              // Mês é 0-indexado no construtor Date
+              setDataVencimentoExibida(new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
+          } else {
+               setDataVencimentoExibida(new Date()); // Fallback
+          }
+        } else {
+            setValorMensalidadeExibido("380.00"); // Valor padrão
+            setDataVencimentoExibida(new Date()); // Data Padrão
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
@@ -100,30 +109,10 @@ export default function Inicial({ navigation }) {
     obterLocalizacao();
   }, []);
 
-  const abrirModalMensalidade = () => {
-    setMostrarDatePicker(false);
-    setNovoValorMensalidade(mensalidade.toString());
-    setModalVisible(true);
-  };
+   const navegarParaMensalidades = () => {
+      navigation.navigate("Mensalidades"); // Navega para a nova tela
+   };
 
-  const salvarMensalidadeHandler = async () => {
-    const valor = parseFloat(novoValorMensalidade);
-    if (!isNaN(valor)) {
-      await salvarMensalidade(
-        valor,
-        dataVencimento.toISOString().split("T")[0]
-      );
-      setMensalidade(valor);
-      setModalVisible(false);
-    } else {
-      Alert.alert("Valor inválido", "Por favor, insira um número válido.");
-    }
-  };
-
-  const aoSelecionarData = (event, selectedDate) => {
-    setMostrarDatePicker(Platform.OS === "ios");
-    if (selectedDate) setDataVencimento(selectedDate);
-  };
 
   const handleBotaoPrincipal = () => {
     if (viagemDeVoltaPendente) {
@@ -154,14 +143,15 @@ export default function Inicial({ navigation }) {
 
             <TouchableOpacity
               style={styles.card}
-              onPress={abrirModalMensalidade}
+              onPress={navegarParaMensalidades} // Alterar aqui
             >
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
                 <Texto style={styles.cardTextBold}>
-                  Valor atual: R$ {mensalidade.toFixed(2)}
+                  Valor atual: R$ {valorMensalidadeExibido}
                 </Texto>
-                <Texto style={styles.cardSub}>Toque para editar</Texto>
+                 <Texto style={styles.cardSub}>Vencimento: {formatarData(dataVencimentoExibida)}</Texto>
+                 <Texto style={styles.cardSub}>Toque para gerenciar</Texto>
               </View>
             </TouchableOpacity>
           </View>
@@ -228,51 +218,7 @@ export default function Inicial({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={styles.modalBackground}>
-            <View style={styles.modalContainer}>
-              <Texto style={styles.modalTitle}>Editar Mensalidade</Texto>
-              <TextInput
-                style={styles.input}
-                placeholder="Novo valor"
-                placeholderTextColor="#cfcfcf"
-                keyboardType="numeric"
-                value={novoValorMensalidade}
-                onChangeText={setNovoValorMensalidade}
-              />
-              <TouchableOpacity
-                onPress={() => setMostrarDatePicker(true)}
-                style={styles.input}
-              >
-                <Texto style={{ color: "#fff" }}>
-                  Vencimento: {formatarData(dataVencimento)}
-                </Texto>
-              </TouchableOpacity>
-              {mostrarDatePicker && (
-                <DateTimePicker
-                  value={dataVencimento}
-                  mode="date"
-                  display="default"
-                  onChange={aoSelecionarData}
-                />
-              )}
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Texto style={styles.modalButtonText}>Cancelar</Texto>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton]}
-                  onPress={salvarMensalidadeHandler}
-                >
-                  <Texto style={styles.modalButtonText}>Salvar</Texto>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+         {/* Modal removido */}
 
         <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
       </View>
@@ -285,6 +231,7 @@ const styles = StyleSheet.create({
       flex: 1,
       backgroundColor: "#050a24",
       paddingTop: 30,
+      paddingVertical: 30,
     },
     header: {
       top: -10,
@@ -367,57 +314,31 @@ const styles = StyleSheet.create({
       borderRadius: 16,
       alignItems: "center",
       width: "100%",
-      marginTop: 30,
+      marginTop: 20,
     },
     botaoText: {
       color: "white",
       fontSize: width > 768 ? 24 : 20,
       fontWeight: "bold",
     },
-    modalBackground: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      paddingHorizontal: 20,
-    },
-    modalContainer: {
-      backgroundColor: "#1C1F2E",
-      borderRadius: 16,
-      padding: 20,
-    },
-    modalTitle: {
-      color: "white",
-      fontSize: 20,
-      textAlign: "center",
-      marginBottom: 10,
-      fontWeight: "bold",
-    },
-    input: {
-      backgroundColor: "#373e4f",
-      color: "#fff",
-      borderRadius: 8,
-      padding: 10,
-      fontSize: 18,
-      marginBottom: 10,
-    },
-    modalButtons: {
+     modalButtons: { // Mantido caso precise de modais em outros lugares, mas pode ser removido se não
       flexDirection: "row",
       marginTop: 20,
       gap: 10,
     },
-    modalButton: {
+    modalButton: { // Mantido caso precise de modais em outros lugares
       flex: 1,
       paddingVertical: 16,
       borderRadius: 16,
       alignItems: "center",
     },
-    saveButton: {
+    saveButton: { // Mantido caso precise de modais em outros lugares
       backgroundColor: "#0B49C1",
     },
-    cancelButton: {
+    cancelButton: { // Mantido caso precise de modais em outros lugares
       backgroundColor: "#373e4f",
     },
-    modalButtonText: {
+    modalButtonText: { // Mantido caso precise de modais em outros lugares
       color: "white",
       fontSize: 18,
       fontWeight: "bold",

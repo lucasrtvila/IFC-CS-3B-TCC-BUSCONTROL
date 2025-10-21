@@ -244,10 +244,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
     paddingVertical:30,
-    paddingBottom: 20,
   },
   conteudo: {
     flex: 1,
+    paddingBottom: 10,
   },
 
   header: {
@@ -425,7 +425,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 16,
     alignItems: "center",
-    flex: 1,
+    marginTop: 20,
+    width: "100%",
   },
 
   botaoCancelar: {

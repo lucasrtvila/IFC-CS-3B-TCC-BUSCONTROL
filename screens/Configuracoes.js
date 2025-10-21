@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // Removido
 
 import Texto from "../components/Texto";
 import { resetDatabase } from "../database/database";
@@ -46,7 +46,8 @@ export default function ConfiguracoesScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    // <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -66,7 +67,8 @@ export default function ConfiguracoesScreen({ navigation }) {
           <Texto style={styles.botaoTexto}>Apagar Todos os Dados</Texto>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
+    // </SafeAreaView>
   );
 }
 
@@ -74,6 +76,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050a24",
+    paddingTop: 40, // Adicionado paddingTop para compensar a remoção do SafeAreaView
   },
   header: {
     paddingVertical: 10,

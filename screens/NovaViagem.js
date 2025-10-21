@@ -11,7 +11,7 @@ import {
   Alert,
   Platform,
   FlatList,
-  ScrollView,
+  SafeAreaView, // Import SafeAreaView
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -25,6 +25,7 @@ import { ViagemContext } from "../components/ViagemContext";
 const { width } = Dimensions.get("window");
 
 const formatarData = (date) => {
+  if (!date) return ''; // Add check for null or undefined date
   const dia = date.getDate().toString().padStart(2, "0");
   const mes = (date.getMonth() + 1).toString().padStart(2, "0");
   const ano = date.getFullYear();
@@ -32,6 +33,7 @@ const formatarData = (date) => {
 };
 
 const formatarHorario = (date) => {
+    if (!date) return ''; // Add check for null or undefined date
   const hours = date.getHours().toString().padStart(2, "0");
   const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
@@ -114,7 +116,7 @@ export default function NovaViagemScreen({ navigation }) {
       alunosSelecionadosIds: alunosSelecionados.map(a => a.id), // Passa os IDs para o template
     });
   };
-  
+
   const renderAlunoItem = ({ item }) => {
     const isSelected = alunosSelecionados.find((a) => a.id === item.id);
     return (
@@ -130,15 +132,14 @@ export default function NovaViagemScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-        <ScrollView
-          style={styles.safeArea}
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.container}>
+       {/* Use SafeAreaView to wrap the entire screen content */}
+      <SafeAreaView style={styles.safeArea}>
+        {/* Replace ScrollView with a simple View */}
+        <View style={styles.container}>
             <Header style={styles.header} navigation={navigation} />
             <Texto style={styles.titulo}>Nova viagem</Texto>
 
+            {/* Wrap the main content area in a View with flex: 1 */}
             <View style={styles.content}>
               <View style={styles.tipoViagemContainer}>
                 <TouchableOpacity
@@ -241,7 +242,7 @@ export default function NovaViagemScreen({ navigation }) {
                 >
                   <Texto style={styles.inputText}>
                     {veiculoSelecionado
-                      ? veiculos.find((v) => v.id === veiculoSelecionado)?.nome
+                      ? veiculos.find((v) => v.id === veiculoSelecionado)?.nome ?? 'Veículo não encontrado' // Added nullish coalescing
                       : "Selecione o veículo"}
                   </Texto>
                 </TouchableOpacity>
@@ -263,6 +264,9 @@ export default function NovaViagemScreen({ navigation }) {
                   </Texto>
                 </TouchableOpacity>
               </View>
+            {/* End of main content View */}
+            </View>
+
 
               {showInicioPicker && (
                 <DateTimePicker
@@ -288,7 +292,7 @@ export default function NovaViagemScreen({ navigation }) {
                   onChange={onChangeData}
                 />
               )}
-            </View>
+
 
             <View style={styles.footerButtons}>
               <TouchableOpacity
@@ -304,31 +308,33 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Iniciar</Texto>
               </TouchableOpacity>
             </View>
+          {/* End of container View */}
           </View>
-        </ScrollView>
+        {/* End of SafeAreaView */}
+      </SafeAreaView>
 
       <Modal
         visible={modalAlunosVisivel}
         animationType="slide"
         transparent
       >
-        <View style={styles.modalFundo}>
-          <View style={styles.modalBox}>
-            <Texto style={styles.modalTitulo}>Alunos Presentes</Texto>
-            <FlatList
-              data={alunos}
-              renderItem={renderAlunoItem}
-              keyExtractor={(item) => item.id.toString()}
-              style={styles.alunosList}
-            />
-            <TouchableOpacity
-              style={styles.botaoIniciarModal}
-              onPress={() => setModalAlunosVisivel(false)}
-            >
-              <Texto style={styles.botaoTexto}>Concluir</Texto>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <SafeAreaView style={styles.modalSafeArea}>
+            <View style={styles.modalBox}>
+                <Texto style={styles.modalTitulo}>Alunos Presentes</Texto>
+                <FlatList
+                data={alunos}
+                renderItem={renderAlunoItem}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.alunosList}
+                />
+                <TouchableOpacity
+                style={styles.botaoIniciarModal}
+                onPress={() => setModalAlunosVisivel(false)}
+                >
+                <Texto style={styles.botaoTexto}>Concluir</Texto>
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
       </Modal>
 
       <Modal
@@ -336,33 +342,34 @@ export default function NovaViagemScreen({ navigation }) {
         animationType="slide"
         transparent
       >
-        <View style={styles.modalFundo}>
-          <View style={styles.modalBox}>
-            <Texto style={styles.modalTitulo}>Selecionar Veículo</Texto>
-            <FlatList
-              data={veiculos}
-              renderItem={({ item }) => (
+        <SafeAreaView style={styles.modalSafeArea}>
+            <View style={styles.modalBox}>
+                <Texto style={styles.modalTitulo}>Selecionar Veículo</Texto>
+                <FlatList
+                data={veiculos.filter(v => v.status === 'Ativo')} // Filter only active vehicles
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                    style={[
+                        styles.alunoItem,
+                        veiculoSelecionado === item.id && styles.alunoItemSelected,
+                    ]}
+                    onPress={() => setVeiculoSelecionado(item.id)}
+                    >
+                    <Texto style={styles.alunoItemText}>{item.nome}</Texto>
+                    </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.alunosList}
+                ListEmptyComponent={<Texto style={styles.emptyListText}>Nenhum veículo ativo</Texto>} // Added empty state
+                />
                 <TouchableOpacity
-                  style={[
-                    styles.alunoItem,
-                    veiculoSelecionado === item.id && styles.alunoItemSelected,
-                  ]}
-                  onPress={() => setVeiculoSelecionado(item.id)}
+                style={styles.botaoIniciarModal}
+                onPress={() => setModalVeiculosVisivel(false)}
                 >
-                  <Texto style={styles.alunoItemText}>{item.nome}</Texto>
+                <Texto style={styles.botaoTexto}>Concluir</Texto>
                 </TouchableOpacity>
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              style={styles.alunosList}
-            />
-            <TouchableOpacity
-              style={styles.botaoIniciarModal}
-              onPress={() => setModalVeiculosVisivel(false)}
-            >
-              <Texto style={styles.botaoTexto}>Concluir</Texto>
-            </TouchableOpacity>
-          </View>
-        </View>
+            </View>
+        </SafeAreaView>
       </Modal>
     </>
   );
@@ -372,15 +379,18 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
+    paddingVertical: 30,
   },
   container: {
-    flex: 1,
+    flex: 1, // Make container take full available space within SafeAreaView
     paddingHorizontal: 20,
-    paddingTop: 30,
-    justifyContent: "space-between",
+    paddingTop: 10, // Reduced top padding as SafeAreaView handles status bar
+    justifyContent: "space-between", // Distribute space between header, content, footer
   },
   header: {
-    paddingBottom: 10,
+    alignItems: "center",
+    top: -20,
+    marginBottom:-20,
   },
   titulo: {
     fontSize: 28,
@@ -390,19 +400,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   content: {
-    flex: 1,
-    width: "100%",
+     flex: 1, // Allow content to take up remaining space
+     width: "100%",
+     // Removed justifyContent: 'center' to allow natural flow
   },
   tipoViagemContainer: {
     flexDirection: "row",
     backgroundColor: "#1c2337",
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 15, // Adjusted margin
     padding: 4,
   },
   tipoViagemBotao: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10, // Adjusted padding
     borderRadius: 10,
     alignItems: "center",
   },
@@ -420,7 +431,7 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 15, // Adjusted margin
   },
   timeInput: {
     width: "48%",
@@ -434,7 +445,7 @@ const styles = StyleSheet.create({
   inputLike: {
     backgroundColor: "#1c2337",
     borderRadius: 12,
-    paddingVertical: 18,
+    paddingVertical: 15, // Adjusted padding
     alignItems: "center",
   },
   inputText: {
@@ -447,13 +458,13 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#1c2337",
-    marginVertical: 10,
+    marginVertical: 10, // Adjusted margin
   },
   detalhesTitulo: {
     color: "white",
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 15, // Adjusted margin
     textAlign: "center",
   },
   inputGroup: {
@@ -462,7 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1c2337",
     borderRadius: 12,
     paddingHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: 10, // Adjusted margin
   },
   icon: {
     width: 20,
@@ -475,7 +486,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 16,
-    height: 60,
+    height: 50, // Adjusted height
     justifyContent: "center",
   },
   footerButtons: {
@@ -483,18 +494,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     paddingTop: 10,
-    paddingBottom: 20,
+    paddingBottom: 10, // Reduced bottom padding as SafeAreaView handles nav bar
+    borderTopWidth: 1, // Optional: add a divider
+    borderTopColor: '#1c2337', // Optional: divider color
   },
   botaoCancelar: {
     backgroundColor: "#373e4f",
-    paddingVertical: 18,
+    paddingVertical: 15, // Adjusted padding
     borderRadius: 12,
     width: "48%",
     alignItems: "center",
   },
   botaoIniciar: {
     backgroundColor: "#0B49C1",
-    paddingVertical: 18,
+    paddingVertical: 15, // Adjusted padding
     borderRadius: 12,
     width: "48%",
     alignItems: "center",
@@ -504,18 +517,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  modalFundo: {
+   modalSafeArea: { // Style for SafeAreaView inside Modals
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.7)", // Keep the background dimming
   },
   modalBox: {
     backgroundColor: "#1c2337",
     borderRadius: 16,
     padding: 20,
     width: "90%",
-    maxHeight: "80%",
+    maxHeight: "80%", // Keep maxHeight
   },
   modalTitulo: {
     color: "#fff",
@@ -540,10 +553,17 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
+   emptyListText: { // Added style for empty list text
+    color: "#AAB1C4",
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+  },
   botaoIniciarModal: {
     backgroundColor: "#0B49C1",
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: "center",
+    marginTop: 10, // Added margin top for spacing
   },
 });

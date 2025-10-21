@@ -9,12 +9,13 @@ import VeiculosScreen from "./screens/Veiculos";
 import InicialScreen from "./screens/Inicial";
 import LembretesScreen from "./screens/Lembretes";
 import AlunosScreen from "./screens/Alunos";
+import MensalidadesScreen from "./screens/Mensalidades";
 import ConfiguracoesScreen from "./screens/Configuracoes";
 import RotaScreen from "./screens/Rota";
 import NovaViagemScreen from "./screens/NovaViagem.js";
 import ViagemAtivaScreen from "./screens/ViagemAtiva.js";
 import ListaPresencaScreen from "./screens/ListaPresenca.js";
-import HistoricoViagensScreen from "./screens/HistoricoViagens.js"; // Importa a nova tela
+import HistoricoViagensScreen from "./screens/HistoricoViagens.js";
 
 // Contextos
 import { VeiculosProvider } from "./components/VeiculosContext";
@@ -26,6 +27,7 @@ import { ViagemProvider } from "./components/ViagemContext";
 // Banco de Dados
 import { initDB, migrateDatabase } from "./database/database";
 import { getUsuario } from "./database/database";
+// import { verificarEVAtualizarStatusMensalidade } from "./database/database"; // Removido
 
 const Stack = createStackNavigator();
 
@@ -38,6 +40,7 @@ export default function App() {
       try {
         await initDB();
         await migrateDatabase();
+        // await verificarEVAtualizarStatusMensalidade(); // Removido
         const usuario = await getUsuario();
         setInitialRoute(usuario ? "Inicial" : "Cadastro");
         setDbReady(true);
@@ -72,6 +75,7 @@ export default function App() {
                   <Stack.Screen name="Veiculos" component={VeiculosScreen} />
                   <Stack.Screen name="Inicial" component={InicialScreen} />
                   <Stack.Screen name="Alunos" component={AlunosScreen} />
+                  <Stack.Screen name="Mensalidades" component={MensalidadesScreen} />
                   <Stack.Screen name="Lembretes" component={LembretesScreen} />
                   <Stack.Screen name="Rota" component={RotaScreen} />
                   <Stack.Screen name="NovaViagem" component={NovaViagemScreen} />

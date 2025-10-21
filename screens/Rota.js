@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     color: "white",
     marginBottom: 30,
     textAlign: "center",
-
+     fontWeight: "bold",
   },
   listContainer: {
     paddingBottom: 20,
@@ -308,12 +308,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   botaoAdicionar: {
-    backgroundColor: "#0B49C1",
-    paddingVertical: width > 768 ? 20 : 16,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 25,
-    marginBottom: 10,
+      backgroundColor: "#0B49C1",
+      paddingVertical: width > 768 ? 20 : 16,
+      borderRadius: 16,
+      alignItems: "center",
+      width: "100%",
+      marginTop: 20,
   },
   botaoAdicionarTexto: {
     color: "white",
