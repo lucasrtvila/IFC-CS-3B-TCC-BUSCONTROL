@@ -3,7 +3,7 @@ import Texto from "../components/Texto";
 import {
   View,
   FlatList,
-  TextInput,
+  TextInput, // Certifique-se que TextInput está aqui
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -18,16 +18,18 @@ import { LembretesContext } from "../components/LembretesContext";
 const { width } = Dimensions.get("window");
 
 function formatarData(data) {
-  const dia = data.getDate().toString().padStart(2, "0");
-  const mes = (data.getMonth() + 1).toString().padStart(2, "0");
-  const ano = data.getFullYear();
-  return `${dia}/${mes}/${ano}`;
+    if (!data) return ''; // Adiciona verificação
+    const dia = data.getDate().toString().padStart(2, "0");
+    const mes = (data.getMonth() + 1).toString().padStart(2, "0");
+    const ano = data.getFullYear();
+    return `${dia}/${mes}/${ano}`;
 }
 
 function formatarHora(data) {
-  const hora = data.getHours().toString().padStart(2, "0");
-  const min = data.getMinutes().toString().padStart(2, "0");
-  return `${hora}:${min}`;
+    if (!data) return ''; // Adiciona verificação
+    const hora = data.getHours().toString().padStart(2, "0");
+    const min = data.getMinutes().toString().padStart(2, "0");
+    return `${hora}:${min}`;
 }
 
 export default function LembretesScreen({ navigation }) {
@@ -35,7 +37,7 @@ export default function LembretesScreen({ navigation }) {
     useContext(LembretesContext);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [editarIndex, setEditarIndex] = useState(null);
+  const [editarIndex, setEditarIndex] = useState(null); // Agora armazena o ID
   const [tituloInput, setTituloInput] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
@@ -44,24 +46,32 @@ export default function LembretesScreen({ navigation }) {
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [mostrarHoraPicker, setMostrarHoraPicker] = useState(false);
 
-  const abrirModal = (index = null) => {
-    if (index !== null) {
-      setEditarIndex(lembretes[index].id); 
-      setTituloInput(lembretes[index].titulo);
+  // Abre o modal para adicionar ou editar
+  const abrirModal = (lembreteParaEditar = null) => { // Recebe o objeto lembrete
+    if (lembreteParaEditar) {
+      setEditarIndex(lembreteParaEditar.id); // Armazena o ID
+      setTituloInput(lembreteParaEditar.titulo);
 
-      // Separa data e hora do item
-      const dataStr = lembretes[index].data;
-      const horaStr = lembretes[index].hora || "00:00";
+      const dataStr = lembreteParaEditar.data; // DD/MM/YYYY
+      const horaStr = lembreteParaEditar.hora || formatarHora(new Date()); // Usa hora atual se não houver
       setDataInput(dataStr);
       setHoraInput(horaStr);
 
-      // Cria objetos Date para os pickers
-      const [dia, mes, ano] = dataStr.split("/");
-      const [h, m] = horaStr.split(":");
-      const dataObj = new Date(ano, mes - 1, dia, h, m);
-      setDataSelecionada(dataObj);
-      setHoraSelecionada(dataObj);
-    } else {
+      // Converte DD/MM/YYYY e HH:MM para objeto Date
+      try {
+        const [dia, mes, ano] = dataStr.split("/");
+        const [h, m] = horaStr.split(":");
+        const dataObj = new Date(ano, mes - 1, dia, h, m);
+        setDataSelecionada(dataObj);
+        setHoraSelecionada(dataObj);
+      } catch (e) {
+          console.error("Erro ao converter data/hora do lembrete:", e)
+          const hoje = new Date();
+          setDataSelecionada(hoje);
+          setHoraSelecionada(hoje);
+      }
+
+    } else { // Novo lembrete
       setEditarIndex(null);
       setTituloInput("");
       const hoje = new Date();
@@ -75,7 +85,7 @@ export default function LembretesScreen({ navigation }) {
     setModalVisible(true);
   };
 
-  const handleAdicionarLembrete = () => {
+  const handleSalvarLembrete = () => { // Renomeado para handleSalvarLembrete
     console.log({ tituloInput, dataInput, horaInput, editarIndex });
     if (!tituloInput.trim() || !dataInput.trim() || !horaInput.trim()) {
       Alert.alert("Erro", "Preencha título, data e hora.");
@@ -83,13 +93,28 @@ export default function LembretesScreen({ navigation }) {
     }
 
     if (editarIndex !== null) {
-      editarLembrete(editarIndex, tituloInput, dataInput, horaInput);
+      editarLembrete(editarIndex, tituloInput, dataInput, horaInput); // Passa o ID
     } else {
-      adicionarLembrete(tituloInput, dataInput, horaInput);
+      adicionarLembrete(tituloInput, dataInput, horaInput); //
     }
     
     setModalVisible(false);
   };
+
+  const confirmarRemocao = (id) => {
+      Alert.alert(
+          "Confirmar Exclusão",
+          "Tem certeza que deseja excluir este lembrete?",
+          [
+              { text: "Cancelar", style: "cancel" },
+              {
+                  text: "Excluir",
+                  style: "destructive",
+                  onPress: () => removerLembrete(id) //
+              }
+          ]
+      )
+  }
 
   const abrirDatePicker = () => setMostrarDatePicker(true);
   const abrirHoraPicker = () => setMostrarHoraPicker(true);
@@ -98,7 +123,7 @@ export default function LembretesScreen({ navigation }) {
     setMostrarDatePicker(Platform.OS === "ios");
     if (selectedDate) {
       setDataSelecionada(selectedDate);
-      setDataInput(formatarData(selectedDate));
+      setDataInput(formatarData(selectedDate)); // Formata para DD/MM/YYYY
     }
   };
 
@@ -106,7 +131,7 @@ export default function LembretesScreen({ navigation }) {
     setMostrarHoraPicker(Platform.OS === "ios");
     if (selectedTime) {
       setHoraSelecionada(selectedTime);
-      setHoraInput(formatarHora(selectedTime));
+      setHoraInput(formatarHora(selectedTime)); // Formata para HH:MM
     }
   };
 
@@ -123,23 +148,25 @@ export default function LembretesScreen({ navigation }) {
           />
         </TouchableOpacity>
         <Texto style={styles.titulo}>Lembretes</Texto>
+        {/* Placeholder para centralizar título */}
+        <View style={{ width: 40 }}/> 
       </View>
 
       <View style={styles.conteudo}>
         <FlatList
           data={lembretes}
-          keyExtractor={item => item.id?.toString()}
+          keyExtractor={item => item.id?.toString()} // Usa ID se disponível
           style={styles.lista}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Texto style={styles.emptyText}>Nenhum lembrete registrado</Texto>
             </View>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item }) => ( // Passa o objeto 'item' diretamente
             <View style={styles.lembreteItem}>
               <TouchableOpacity
                 style={styles.lembreteInfo}
-                onPress={() => abrirModal(lembretes.findIndex(l => l.id === item.id))}
+                onPress={() => abrirModal(item)} // Passa o objeto lembrete para edição
               >
                 <Texto style={styles.lembreteTitulo} numberOfLines={2}>
                   {item.titulo}
@@ -152,8 +179,10 @@ export default function LembretesScreen({ navigation }) {
               <View style={styles.excluirContainer}>
                 <TouchableOpacity
                   style={styles.botaoRemover}
-                  onPress={() => removerLembrete(item.id)}
+                  onPress={() => confirmarRemocao(item.id)} // Passa o ID para remoção
                 >
+                  {/* Ícone de Lixeira (opcional) */}
+                  {/* <Image source={require('../assets/lixeira.png')} style={styles.iconeLixeira} /> */}
                   <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
                 </TouchableOpacity>
               </View>
@@ -162,7 +191,7 @@ export default function LembretesScreen({ navigation }) {
         />
 
         <TouchableOpacity style={styles.botaoNovo} onPress={() => abrirModal()}>
-          <Texto style={styles.botaoTexto}>Adicionar Lembrete</Texto>
+          <Texto style={styles.botaoTextoNovo}>Adicionar Lembrete</Texto>
         </TouchableOpacity>
 
         <Modal visible={modalVisible} animationType="fade" transparent={true}>
@@ -173,10 +202,10 @@ export default function LembretesScreen({ navigation }) {
               </Texto>
 
               <Texto style={styles.label}>Título</Texto>
-              <TextInput
+              <TextInput // O TextInput estava sendo usado aqui sem importar
                 style={styles.input}
                 placeholder="Digite o título do lembrete"
-                placeholderTextColor="#cfcfcf"
+                placeholderTextColor="#AAB1C4" // Cor mais suave
                 value={tituloInput}
                 onChangeText={setTituloInput}
               />
@@ -184,9 +213,9 @@ export default function LembretesScreen({ navigation }) {
               <Texto style={styles.label}>Data</Texto>
               <TouchableOpacity
                 onPress={abrirDatePicker}
-                style={styles.inputData}
+                style={styles.inputData} // Estilo de input, mas clicável
               >
-                <Texto style={{ color: dataInput ? "#fff" : "#cfcfcf" }}>
+                <Texto style={styles.dataHoraTexto}> 
                   {dataInput || "Selecionar data"}
                 </Texto>
               </TouchableOpacity>
@@ -202,9 +231,9 @@ export default function LembretesScreen({ navigation }) {
               <Texto style={styles.label}>Hora</Texto>
               <TouchableOpacity
                 onPress={abrirHoraPicker}
-                style={styles.inputData}
+                style={styles.inputData} // Estilo de input, mas clicável
               >
-                <Texto style={{ color: horaInput ? "#fff" : "#cfcfcf" }}>
+                <Texto style={styles.dataHoraTexto}>
                   {horaInput || "Selecionar hora"}
                 </Texto>
               </TouchableOpacity>
@@ -218,16 +247,20 @@ export default function LembretesScreen({ navigation }) {
                 />
               )}
 
+              {/* Botões Cancelar e Salvar lado a lado */}
               <View style={styles.modalBotoes}>
                 <TouchableOpacity
-                  style={[styles.botao, styles.botaoCancelar]}
+                  style={[styles.botaoModal, styles.botaoCancelar]} // Aplica estilo [botaoModal, botaoCancelar]
                   onPress={() => setModalVisible(false)}
                 >
-                  <Texto style={styles.botaoTexto}>Cancelar</Texto>
+                  <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.botao} onPress={handleAdicionarLembrete}>
-                  <Texto style={styles.botaoTexto}>Salvar</Texto>
+                <TouchableOpacity 
+                  style={styles.botaoModal} // Aplica só o estilo base (azul)
+                  onPress={handleSalvarLembrete}
+                > 
+                  <Texto style={styles.botaoModalTexto}>Salvar</Texto>
                 </TouchableOpacity>
               </View>
             </View>
@@ -243,193 +276,174 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingVertical:30,
+    paddingTop:30, // Aumentado para dar espaço ao header
   },
   conteudo: {
     flex: 1,
     paddingBottom: 10,
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    position: "relative",
+    justifyContent: "space-between", // Alterado para space-between
+    // paddingHorizontal: 20, // Removido, container já tem
     marginBottom: 20,
   },
-
   botaoVoltar: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    left: 3,
-    zIndex: 1,
+    padding: 10, // Área de toque
   },
-
   titulo: {
     color: "#FFF",
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
+    flex: 1, // Permite que o título centralize corretamente
   },
-
   iconeVoltar: {
     width: 27,
     height: 27,
     resizeMode: "contain",
   },
-
   lista: {
     flex: 1,
   },
-
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 50, // Adiciona margem
   },
-
   emptyText: {
-    color: "#cfcfcf",
+    color: "#AAB1C4", // Cor mais suave
     fontSize: 16,
     textAlign: "center",
   },
-
   lembreteItem: {
     backgroundColor: "#1c2337",
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20, // Reduzido padding
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: 15, // Reduzido margem
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   lembreteInfo: {
-    flex: 1,
+    flex: 1, // Ocupa espaço disponível
+    marginRight: 15, // Espaço antes dos botões
   },
-
   lembreteTitulo: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 18, // Levemente menor
     fontWeight: "bold",
     marginBottom: 5,
   },
-
   lembreteData: {
-    color: "#cfcfcf",
+    color: "#AAB1C4", // Cor mais suave
     fontSize: 14,
   },
-
   excluirContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginLeft: 20,
+    // Mantém como está ou ajusta se necessário
   },
-
   botaoRemover: {
-    width: 70,
+    // Mantém como está ou ajusta se necessário
+    paddingHorizontal: 15, // Adiciona padding horizontal
     height: 35,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#c41628ff",
   },
-
   botaoAcaoTexto: {
-    fontSize: 20,
+    fontSize: 14, // Reduzido
     fontWeight: "bold",
-    color: "#cfcfcf",
+    color: "#fff", // Branco para melhor contraste
   },
-
-  botaoNovo: {
+  botaoNovo: { 
     backgroundColor: "#0B49C1",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 16, // Aumentado padding
     borderRadius: 16,
     alignItems: "center",
     marginTop: 20,
     width: "100%",
   },
-
-  botaoTexto: {
+  botaoTextoNovo: { 
     color: "#fff",
-    fontSize: 22,
+    fontSize: 18, // Reduzido
     fontWeight: "bold",
   },
-
   modalFundo: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000000aa",
+    backgroundColor: "rgba(0,0,0,0.7)", // Fundo mais escuro
   },
-
   modalContainer: {
     backgroundColor: "#1c2337",
     padding: 20,
     borderRadius: 16,
     width: "90%",
+    maxWidth: 400, // Largura máxima
   },
-
   modalTitulo: {
     color: "#fff",
     fontSize: 20,
-    marginBottom: 15,
+    marginBottom: 20, // Aumentado margem
     textAlign: "center",
     fontWeight: "bold",
   },
-
   label: {
     color: "#fff",
     fontSize: 16,
     marginBottom: 8,
     marginTop: 10,
+    alignSelf: 'flex-start', // Garante alinhamento
   },
-
   input: {
     backgroundColor: "#373e4f",
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 10, // Menos arredondado
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 15,
     fontSize: 16,
     color: "#ffffff",
   },
-
-  inputData: {
+  inputData: { // Estilo para os TocouhableOpacity de data/hora
     backgroundColor: "#373e4f",
-    borderRadius: 16,
+    width: "100%",
+    borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 15,
-    justifyContent: "center",
+    justifyContent: 'center', // Centraliza texto verticalmente
+    height: 48, // Altura similar ao TextInput
   },
-
+  dataHoraTexto: { // Estilo para o texto dentro dos TouchableOpacity
+      fontSize: 16,
+      color: "#fff",
+  },
+  // --- Estilos Corrigidos dos Botões do Modal ---
   modalBotoes: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-between", // Espaça os botões
     marginTop: 20,
-    gap: 10,
+    gap: 10, // Espaço entre os botões
   },
-
-  botao: {
-    backgroundColor: "#0B49C1",
+  botaoModal: { // Estilo base COMUM aos botões do modal
+    backgroundColor: "#0B49C1", // Azul para Salvar (padrão)
     paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 16,
+    borderRadius: 10, // Menos arredondado
     alignItems: "center",
-    marginTop: 20,
-    width: "100%",
+    flex: 1, // Faz os botões dividirem o espaço
   },
-
   botaoCancelar: {
-    backgroundColor: "#373e4f",
+    backgroundColor: "#373e4f", // Cinza para Cancelar
   },
+  botaoModalTexto: { // Texto para AMBOS os botões do modal
+    color: "#fff",
+    fontSize: 16, // Tamanho padrão
+    fontWeight: "bold",
+  },
+  // --- FIM CORREÇÃO ---
 });

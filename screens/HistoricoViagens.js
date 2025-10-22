@@ -22,38 +22,69 @@ const ViagemCard = ({ item, getNomeVeiculo }) => {
   const getTipoViagemLabel = (tipo) => {
     if (tipo === 'so_ida') return 'Só Ida';
     if (tipo === 'ida_e_volta') return 'Ida e Volta';
-    if (tipo === 'volta') return 'Viagem de Volta';
+    // Não deve mostrar 'volta' como tipo principal no histórico
+    // if (tipo === 'volta') return 'Viagem de Volta (Erro?)';
     return 'Viagem';
   }
 
-  const alunosIda = item.alunos ? JSON.parse(item.alunos) : [];
-  const alunosVolta = item.alunos_volta ? JSON.parse(item.alunos_volta) : null;
+  // Parse JSON, tratando possíveis erros ou valores nulos
+  let alunosIda = [];
+  try {
+      alunosIda = item.alunos ? JSON.parse(item.alunos) : [];
+  } catch (e) { console.error("Erro ao parsear alunos da ida:", e); }
+
+  let alunosVolta = null;
+  try {
+      alunosVolta = item.alunos_volta ? JSON.parse(item.alunos_volta) : null;
+  } catch (e) { console.error("Erro ao parsear alunos da volta:", e); }
+
 
   return (
     <TouchableOpacity style={styles.card} onPress={() => setExpandido(!expandido)}>
       <View style={styles.cardHeader}>
         <Texto style={styles.cardTitulo}>{item.destino}</Texto>
-        <Texto style={styles.cardTipoViagem}>{getTipoViagemLabel(item.tipoViagem)}</Texto>
+        {/* Só mostra o tipo se for 'so_ida' ou 'ida_e_volta' */}
+        {(item.tipoViagem === 'so_ida' || item.tipoViagem === 'ida_e_volta') && (
+             <Texto style={styles.cardTipoViagem}>{getTipoViagemLabel(item.tipoViagem)}</Texto>
+        )}
       </View>
       {expandido && (
         <View style={styles.cardConteudo}>
           <Texto style={styles.cardDetalhe}>Data: {item.data}</Texto>
-          <Texto style={styles.cardDetalhe}>Duração: {item.duracao}</Texto>
+          {/* --- Exibição condicional das durações --- */}
+          {item.tipoViagem === 'ida_e_volta' ? (
+            <>
+              <Texto style={styles.cardDetalhe}>Duração Ida: {item.duracao || 'N/A'}</Texto>
+              <Texto style={styles.cardDetalhe}>Duração Volta: {item.duracao_volta || 'N/A'}</Texto> {/* Mostra duracao_volta */}
+            </>
+          ) : (
+            <Texto style={styles.cardDetalhe}>Duração: {item.duracao || 'N/A'}</Texto> // Para 'so_ida'
+          )}
+          {/* --- FIM --- */}
           <Texto style={styles.cardDetalhe}>Veículo: {getNomeVeiculo(item.veiculoId)}</Texto>
-          
-          <Texto style={styles.cardSubtitulo}>Alunos na Ida ({alunosIda.length}):</Texto>
-          <View style={styles.alunosContainer}>
-            {alunosIda.map((aluno, index) => (
-              <Texto key={index} style={styles.alunoNome}>- {aluno}</Texto>
-            ))}
-          </View>
 
-          {alunosVolta && (
+          {/* Mostra alunos da ida */}
+           <>
+              <Texto style={styles.cardSubtitulo}>Alunos na Ida ({alunosIda.length}):</Texto>
+              <View style={styles.alunosContainer}>
+                  {alunosIda.length > 0 ? (
+                      alunosIda.map((aluno, index) => (
+                      <Texto key={`ida-${index}`} style={styles.alunoNome}>- {aluno || 'Nome Inválido'}</Texto> // Adicionado fallback
+                      ))
+                  ) : (
+                       <Texto style={styles.alunoNome}>Nenhum aluno registrado na ida.</Texto>
+                  )}
+              </View>
+           </>
+
+
+          {/* Mostra alunos da volta se existirem (e se for 'ida_e_volta') */}
+          {item.tipoViagem === 'ida_e_volta' && alunosVolta && (
             <>
               <Texto style={styles.cardSubtitulo}>Alunos na Volta ({alunosVolta.length}):</Texto>
               <View style={styles.alunosContainer}>
                 {alunosVolta.map((aluno, index) => (
-                  <Texto key={index} style={styles.alunoNome}>- {aluno}</Texto>
+                  <Texto key={`volta-${index}`} style={styles.alunoNome}>- {aluno || 'Nome Inválido'}</Texto> // Adicionado fallback
                 ))}
               </View>
             </>
@@ -70,8 +101,9 @@ export default function HistoricoViagensScreen({ navigation }) {
 
   const carregarHistorico = async () => {
     try {
-      const dados = await getViagens();
-      setViagens(dados.reverse());
+      const dados = await getViagens(); // Busca viagens ordenadas DESC
+      // Não precisa mais reverter a ordem aqui
+      setViagens(dados);
     } catch (error) {
       console.error("Erro ao carregar histórico de viagens:", error);
     }
@@ -103,7 +135,7 @@ export default function HistoricoViagensScreen({ navigation }) {
             />
           </TouchableOpacity>
           <Texto style={styles.titulo}>Histórico de Viagens</Texto>
-          <View style={{ width: 48 }} /> 
+          <View style={{ width: 48 }} />
         </View>
 
         <FlatList
@@ -165,11 +197,14 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 18,
         fontWeight: "bold",
+        flex: 1, // Permite que o título ocupe o espaço necessário
+        marginRight: 10, // Adiciona espaço entre título e tipo
       },
       cardTipoViagem: {
         color: "#AAB1C4",
         fontSize: 12,
         fontStyle: 'italic',
+        textAlign: 'right', // Alinha à direita
       },
       cardConteudo: {
         marginTop: 15,

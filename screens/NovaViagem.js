@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   View,
   TouchableOpacity,
@@ -8,10 +8,10 @@ import {
   Modal,
   Image,
   TextInput,
-  Alert,
+  Alert, // Garante que o Alert está importado
   Platform,
   FlatList,
-  SafeAreaView, // Import SafeAreaView
+  SafeAreaView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -21,11 +21,12 @@ import { VeiculosContext } from "../components/VeiculosContext";
 import { AlunosContext } from "../components/AlunosContext";
 import { ParadasContext } from "../components/ParadasContext";
 import { ViagemContext } from "../components/ViagemContext";
+import { getViagens } from "../database/database";
 
 const { width } = Dimensions.get("window");
 
 const formatarData = (date) => {
-  if (!date) return ''; // Add check for null or undefined date
+  if (!date) return '';
   const dia = date.getDate().toString().padStart(2, "0");
   const mes = (date.getMonth() + 1).toString().padStart(2, "0");
   const ano = date.getFullYear();
@@ -33,7 +34,7 @@ const formatarData = (date) => {
 };
 
 const formatarHorario = (date) => {
-    if (!date) return ''; // Add check for null or undefined date
+    if (!date) return '';
   const hours = date.getHours().toString().padStart(2, "0");
   const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
@@ -45,7 +46,7 @@ export default function NovaViagemScreen({ navigation }) {
   const { paradas } = useContext(ParadasContext);
   const { limparTemplate } = useContext(ViagemContext);
 
-  const [tipoViagem, setTipoViagem] = useState("so_ida"); // 'so_ida' ou 'ida_e_volta'
+  const [tipoViagem, setTipoViagem] = useState("ida_e_volta");
   const [inicio, setInicio] = useState(new Date());
   const [final, setFinal] = useState(new Date());
   const [data, setData] = useState(new Date());
@@ -60,6 +61,57 @@ export default function NovaViagemScreen({ navigation }) {
 
   const [modalAlunosVisivel, setModalAlunosVisivel] = useState(false);
   const [modalVeiculosVisivel, setModalVeiculosVisivel] = useState(false);
+
+  const [lastTripData, setLastTripData] = useState(null); 
+
+  // Etapa 1: Busca os dados da viagem UMA VEZ quando a tela montar
+  useEffect(() => {
+    const buscarUltimaViagem = async () => {
+      try {
+        const viagens = await getViagens(); 
+        if (viagens && viagens.length > 0) {
+          let ultimaViagemConsiderada = viagens[0];
+
+          // CORREÇÃO: Verifica se 'destino' existe antes de acessar '.startsWith'
+          if (ultimaViagemConsiderada && 
+              ultimaViagemConsiderada.destino && 
+              ultimaViagemConsiderada.destino.startsWith("Volta de ") && 
+              viagens.length > 1) 
+          {
+              ultimaViagemConsiderada = viagens[1];
+          }
+          
+          setLastTripData(ultimaViagemConsiderada);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar última viagem:", error);
+      }
+    };
+
+    buscarUltimaViagem();
+  }, []); // Array vazio, executa apenas na montagem
+
+  // Etapa 2: Reage à chegada dos dados da viagem E da lista de veículos
+  useEffect(() => {
+    if (!lastTripData) return; // Se não há dados da viagem (ex: BD vazio), não faz nada
+
+    // Define o destino, mas só se o usuário ainda não digitou nada
+    // CORREÇÃO: Verifica se 'destino' existe no objeto
+    if (lastTripData.destino && !lastTripData.destino.startsWith("Volta de ")) {
+        setDestino(prevDestino => (prevDestino.trim() === "" ? lastTripData.destino : prevDestino));
+    }
+
+    // Define o veículo, mas só se o usuário ainda não selecionou um
+    const ultimoVeiculoId = lastTripData.veiculoId;
+    if (ultimoVeiculoId) {
+        const ultimoVeiculo = veiculos.find(v => v.id === ultimoVeiculoId);
+        if (ultimoVeiculo && ultimoVeiculo.status === 'Ativo') {
+            setVeiculoSelecionado(prevVeiculo => (prevVeiculo === null ? ultimoVeiculo.id : prevVeiculo));
+        }
+    }
+    
+  }, [lastTripData, veiculos]); // Depende dos dados da viagem E da lista de veículos
+
 
   const onChangeInicio = (event, selectedDate) => {
     setShowInicioPicker(Platform.OS === "ios");
@@ -84,16 +136,38 @@ export default function NovaViagemScreen({ navigation }) {
     );
   };
 
+  // --- MODIFICAÇÃO: Validação em Etapas ---
   const iniciarViagem = () => {
-    if (!destino || !veiculoSelecionado || alunosSelecionados.length === 0) {
-      Alert.alert(
-        "Campos incompletos",
-        "Por favor, preencha todos os detalhes da viagem."
-      );
-      return;
+    // 1. Verifica o Destino
+    if (!destino.trim()) {
+        Alert.alert(
+            "Campo Faltando",
+            "Por favor, preencha o destino da viagem."
+        );
+        return; // Para aqui
     }
 
-    limparTemplate(); // Limpa qualquer template anterior ao iniciar uma nova viagem
+    // 2. Verifica o Veículo
+    if (!veiculoSelecionado) {
+        Alert.alert(
+            "Campo Faltando",
+            "Por favor, selecione o veículo."
+        );
+        return; // Para aqui
+    }
+
+    // 3. Verifica os Alunos
+    if (alunosSelecionados.length === 0) {
+        Alert.alert(
+            "Campo Faltando",
+            "Por favor, selecione pelo menos um aluno presente."
+        );
+        return; // Para aqui
+    }
+    // --- FIM MODIFICAÇÃO ---
+
+    // Se passou por todas as validações, continua...
+    limparTemplate();
 
     const paradasDaViagemComAlunos = paradas
       .map((parada) => ({
@@ -103,19 +177,21 @@ export default function NovaViagemScreen({ navigation }) {
         ),
       }))
       .filter((parada) => parada.alunos.length > 0)
-      .sort((a, b) => a.horario.localeCompare(b.horario));
+      .sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
 
     const horarioFinalFormatado = formatarHorario(final);
 
+    // Se tudo estiver OK, esta linha DEVE navegar
     navigation.navigate("ViagemAtiva", {
       destino,
       horarioFinal: horarioFinalFormatado,
       paradasDaViagem: paradasDaViagemComAlunos,
       veiculoId: veiculoSelecionado,
-      tipoViagem: tipoViagem, // Passa o tipo de viagem
-      alunosSelecionadosIds: alunosSelecionados.map(a => a.id), // Passa os IDs para o template
+      tipoViagem: tipoViagem,
+      alunosSelecionadosIds: alunosSelecionados.map(a => a.id),
     });
   };
+  // --- FIM ---
 
   const renderAlunoItem = ({ item }) => {
     const isSelected = alunosSelecionados.find((a) => a.id === item.id);
@@ -132,14 +208,11 @@ export default function NovaViagemScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-       {/* Use SafeAreaView to wrap the entire screen content */}
       <SafeAreaView style={styles.safeArea}>
-        {/* Replace ScrollView with a simple View */}
         <View style={styles.container}>
             <Header style={styles.header} navigation={navigation} />
             <Texto style={styles.titulo}>Nova viagem</Texto>
 
-            {/* Wrap the main content area in a View with flex: 1 */}
             <View style={styles.content}>
               <View style={styles.tipoViagemContainer}>
                 <TouchableOpacity
@@ -242,7 +315,7 @@ export default function NovaViagemScreen({ navigation }) {
                 >
                   <Texto style={styles.inputText}>
                     {veiculoSelecionado
-                      ? veiculos.find((v) => v.id === veiculoSelecionado)?.nome ?? 'Veículo não encontrado' // Added nullish coalescing
+                      ? veiculos.find((v) => v.id === veiculoSelecionado)?.nome ?? 'Selecione o veículo'
                       : "Selecione o veículo"}
                   </Texto>
                 </TouchableOpacity>
@@ -264,7 +337,6 @@ export default function NovaViagemScreen({ navigation }) {
                   </Texto>
                 </TouchableOpacity>
               </View>
-            {/* End of main content View */}
             </View>
 
 
@@ -308,12 +380,10 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Iniciar</Texto>
               </TouchableOpacity>
             </View>
-          {/* End of container View */}
           </View>
-        {/* End of SafeAreaView */}
       </SafeAreaView>
 
-      <Modal
+       <Modal
         visible={modalAlunosVisivel}
         animationType="slide"
         transparent
@@ -326,6 +396,7 @@ export default function NovaViagemScreen({ navigation }) {
                 renderItem={renderAlunoItem}
                 keyExtractor={(item) => item.id.toString()}
                 style={styles.alunosList}
+                 ListEmptyComponent={<Texto style={styles.emptyListText}>Nenhum aluno cadastrado</Texto>}
                 />
                 <TouchableOpacity
                 style={styles.botaoIniciarModal}
@@ -346,21 +417,23 @@ export default function NovaViagemScreen({ navigation }) {
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Selecionar Veículo</Texto>
                 <FlatList
-                data={veiculos.filter(v => v.status === 'Ativo')} // Filter only active vehicles
+                data={veiculos.filter(v => v.status === 'Ativo')}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                     style={[
                         styles.alunoItem,
                         veiculoSelecionado === item.id && styles.alunoItemSelected,
                     ]}
-                    onPress={() => setVeiculoSelecionado(item.id)}
+                    onPress={() => {
+                        setVeiculoSelecionado(item.id);
+                    }}
                     >
                     <Texto style={styles.alunoItemText}>{item.nome}</Texto>
                     </TouchableOpacity>
                 )}
                 keyExtractor={(item) => item.id.toString()}
                 style={styles.alunosList}
-                ListEmptyComponent={<Texto style={styles.emptyListText}>Nenhum veículo ativo</Texto>} // Added empty state
+                ListEmptyComponent={<Texto style={styles.emptyListText}>Nenhum veículo ativo</Texto>}
                 />
                 <TouchableOpacity
                 style={styles.botaoIniciarModal}
@@ -382,10 +455,10 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   container: {
-    flex: 1, // Make container take full available space within SafeAreaView
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 10, // Reduced top padding as SafeAreaView handles status bar
-    justifyContent: "space-between", // Distribute space between header, content, footer
+    paddingTop: 10,
+    justifyContent: "space-between",
   },
   header: {
     alignItems: "center",
@@ -400,20 +473,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   content: {
-     flex: 1, // Allow content to take up remaining space
+     flex: 1,
      width: "100%",
-     // Removed justifyContent: 'center' to allow natural flow
   },
   tipoViagemContainer: {
     flexDirection: "row",
     backgroundColor: "#1c2337",
     borderRadius: 12,
-    marginBottom: 15, // Adjusted margin
+    marginBottom: 15,
     padding: 4,
   },
   tipoViagemBotao: {
     flex: 1,
-    paddingVertical: 10, // Adjusted padding
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
@@ -431,7 +503,7 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15, // Adjusted margin
+    marginBottom: 15,
   },
   timeInput: {
     width: "48%",
@@ -445,7 +517,7 @@ const styles = StyleSheet.create({
   inputLike: {
     backgroundColor: "#1c2337",
     borderRadius: 12,
-    paddingVertical: 15, // Adjusted padding
+    paddingVertical: 15,
     alignItems: "center",
   },
   inputText: {
@@ -458,13 +530,13 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#1c2337",
-    marginVertical: 10, // Adjusted margin
+    marginVertical: 10,
   },
   detalhesTitulo: {
     color: "white",
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 15, // Adjusted margin
+    marginBottom: 15,
     textAlign: "center",
   },
   inputGroup: {
@@ -473,7 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1c2337",
     borderRadius: 12,
     paddingHorizontal: 15,
-    marginBottom: 10, // Adjusted margin
+    marginBottom: 10,
   },
   icon: {
     width: 20,
@@ -486,7 +558,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 16,
-    height: 50, // Adjusted height
+    height: 50,
     justifyContent: "center",
   },
   footerButtons: {
@@ -494,20 +566,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     paddingTop: 10,
-    paddingBottom: 10, // Reduced bottom padding as SafeAreaView handles nav bar
-    borderTopWidth: 1, // Optional: add a divider
-    borderTopColor: '#1c2337', // Optional: divider color
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1c2337',
   },
   botaoCancelar: {
     backgroundColor: "#373e4f",
-    paddingVertical: 15, // Adjusted padding
+    paddingVertical: 15,
     borderRadius: 12,
     width: "48%",
     alignItems: "center",
   },
   botaoIniciar: {
     backgroundColor: "#0B49C1",
-    paddingVertical: 15, // Adjusted padding
+    paddingVertical: 15,
     borderRadius: 12,
     width: "48%",
     alignItems: "center",
@@ -517,18 +589,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-   modalSafeArea: { // Style for SafeAreaView inside Modals
+   modalSafeArea: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: "rgba(0,0,0,0.7)", // Keep the background dimming
+    backgroundColor: "rgba(0,0,0,0.7)",
   },
   modalBox: {
     backgroundColor: "#1c2337",
     borderRadius: 16,
     padding: 20,
     width: "90%",
-    maxHeight: "80%", // Keep maxHeight
+    maxHeight: "80%",
   },
   modalTitulo: {
     color: "#fff",
@@ -553,7 +625,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
-   emptyListText: { // Added style for empty list text
+   emptyListText: {
     color: "#AAB1C4",
     textAlign: 'center',
     marginTop: 20,
@@ -564,6 +636,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 10, // Added margin top for spacing
+    marginTop: 10,
   },
 });
