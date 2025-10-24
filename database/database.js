@@ -68,6 +68,14 @@ export async function migrateDatabase() {
         console.log("✅ Tabela 'mensalidades' criada!");
       }
 
+      // Verifica e cria a tabela historico_pagamentos se não existir (essencial para outras partes do app)
+       const historicoPagamentosExists = await database.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='historico_pagamentos';");
+        if (historicoPagamentosExists.length === 0) {
+            await initHistoricoPagamentosTable(); // Chama a função para criar a tabela
+            console.log("✅ Tabela 'historico_pagamentos' criada!");
+        }
+
+
     } catch (error) {
       console.log("❌ Erro na migração:", error);
       throw error;
@@ -224,23 +232,29 @@ export async function getAlunos() {
   // Busca todas as colunas relevantes da tabela alunos
   return await database.getAllAsync("SELECT id, nome, cpf, ultimoPagamento, telefone, paradaId, horario FROM alunos");
 }
-export async function addAluno(nome, cpf, statusInicial = "Não Pago", ultimoPagamento = "", telefone = "", paradaId = null) {
- return queueOperation(async () => {
-     const database = await getDB();
-     // Insere o aluno
-     const result = await database.runAsync("INSERT INTO alunos (nome, cpf, ultimoPagamento, telefone, paradaId, status) VALUES (?, ?, ?, ?, ?, ?)", [nome, cpf || "", ultimoPagamento, telefone || "", paradaId, statusInicial]);
-     const alunoId = result.lastInsertRowId;
 
-     // Se o aluno foi inserido, registra o status de pagamento para o mês atual
-     if (alunoId) {
-         const config = await getMensalidade();
-         const diaVenc = config ? parseDataISO(config.dataVencimento)?.getDate() ?? 20 : 20; // Usa dia 20 se não houver config
-         const mesAnoAtual = getMesAnoDeFaturamentoAtual(diaVenc);
-         await registrarOuAtualizarStatusPagamento(alunoId, mesAnoAtual, statusInicial); // Usa a função de histórico
-     }
-    return result;
- });
+// --- addAluno CORRIGIDO (Versão Simplificada) ---
+// Remove a lógica de registrar pagamento inicial, voltando ao comportamento antigo.
+export async function addAluno(nome, cpf, status, ultimoPagamento = "", telefone = "", paradaId = null) {
+  return queueOperation(async () => {
+    const database = await getDB();
+    console.log(`Tentando adicionar aluno: ${nome}, CPF: ${cpf}, Status: ${status}, Tel: ${telefone}, Parada: ${paradaId}`);
+    try {
+      // Insere o aluno APENAS na tabela alunos, como na versão antiga
+      const result = await database.runAsync(
+          "INSERT INTO alunos (nome, cpf, ultimoPagamento, telefone, paradaId, status) VALUES (?, ?, ?, ?, ?, ?)",
+          [nome, cpf || "", ultimoPagamento, telefone || "", paradaId, status] // Usa o status passado como argumento
+      );
+      console.log(`Aluno ${nome} adicionado com ID: ${result.lastInsertRowId}`);
+      return result; // Retorna o resultado da inserção
+    } catch (error) {
+      console.error(`❌ Erro ao inserir aluno ${nome} no banco:`, error);
+      throw error; // Relança o erro para ser tratado no Context
+    }
+  });
 }
+// --- FIM DA CORREÇÃO ---
+
 
 // --- updateAluno CORRIGIDO para incluir horário ---
 export async function updateAluno(id, nome, cpf, ultimoPagamento, telefone, paradaId, horario) { // Adicionado horario

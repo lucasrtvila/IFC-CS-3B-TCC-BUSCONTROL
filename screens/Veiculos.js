@@ -349,19 +349,19 @@ const styles = StyleSheet.create({
     marginLeft:20
   },
   
-  botaoRemover:{
-    width: 70,
+  botaoRemover: {
+    // Mantém como está ou ajusta se necessário
+    paddingHorizontal: 15, // Adiciona padding horizontal
     height: 35,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#c41628ff",
   },
-
-    botaoAcaoTexto: {
-    fontSize: 20,
+  botaoAcaoTexto: {
+    fontSize: 14, // Reduzido
     fontWeight: "bold",
-    color: "#cfcfcf",
+    color: "#fff", // Branco para melhor contraste
   },
 
 

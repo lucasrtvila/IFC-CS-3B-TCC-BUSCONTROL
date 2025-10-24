@@ -9,42 +9,27 @@ import {
   TextInput,
   Alert,
   Platform,
-  // SafeAreaView, // Removido
   Image,
   Modal,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Texto from "../components/Texto";
 import { AlunosContext } from "../components/AlunosContext";
-import { salvarMensalidade, getMensalidade } from "../database/database";
+// Remover import de salvarMensalidade e getMensalidade daqui
+// import { salvarMensalidade, getMensalidade } from "../database/database";
 
 const { width } = Dimensions.get("window");
 
-// Funções formatarData, formatarDataISO, parseDataISO (mantidas como antes)
+// Funções formatarData, formatarDataISO, parseDataISO (mantidas)
 function formatarData(data) {
     if (!data) return "Selecione a data";
-    const dia = data.getDate().toString().padStart(2, "0");
-    const mes = (data.getMonth() + 1).toString().padStart(2, "0");
-    const ano = data.getFullYear();
+    const dia = data.getUTCDate().toString().padStart(2, "0"); // Usar getUTCDate
+    const mes = (data.getUTCMonth() + 1).toString().padStart(2, "0"); // Usar getUTCMonth
+    const ano = data.getUTCFullYear(); // Usar getUTCFullYear
     return `${dia}/${mes}/${ano}`;
 }
-function formatarDataISO(data) {
-    if (!data) return null;
-    const dia = data.getDate().toString().padStart(2, '0');
-    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-    const ano = data.getFullYear();
-    return `${ano}-${mes}-${dia}`;
-}
-function parseDataISO(dataString) {
-    if (!dataString || typeof dataString !== 'string') return new Date();
-    const parts = dataString.split('-');
-    if (parts.length === 3) {
-      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    }
-    return new Date();
-}
+// Manter formatarDataISO e parseDataISO como estão no AlunosContext.js se precisar usá-las aqui
 
-// Função para formatar Mês/Ano para exibição
 const formatarMesAnoDisplay = (mesAnoString) => {
     if (!mesAnoString) return "";
     const [ano, mes] = mesAnoString.split('-');
@@ -54,110 +39,91 @@ const formatarMesAnoDisplay = (mesAnoString) => {
 
 
 export default function MensalidadesScreen({ navigation }) {
-  const { alunos, updateAlunoStatus, carregarAlunos, mesAnoVisivel, mesAnterior, proximoMes, isProximoMesFuturo } = useContext(AlunosContext);
+  // --- USAR VALORES DO CONTEXTO ---
+  const {
+      alunos,
+      updateAlunoStatus,
+      carregarAlunos, // Para garantir recarregamento se necessário
+      mesAnoVisivel,
+      mesAnterior,
+      proximoMes,
+      isProximoMesFuturo,
+      valorMensalidade: valorMensalidadeContext, // Renomear para evitar conflito
+      dataVencimento: dataVencimentoContext, // Renomear
+      atualizarConfigMensalidade // Função para salvar e atualizar contexto
+  } = useContext(AlunosContext);
 
-  const [valorMensalidade, setValorMensalidade] = useState("0");
-  const [dataVencimento, setDataVencimento] = useState(new Date());
+  // --- ESTADOS LOCAIS APENAS PARA O MODAL DE CONFIG ---
+  const [valorModal, setValorModal] = useState("0");
+  const [dataModal, setDataModal] = useState(new Date());
+  // --- FIM ESTADOS LOCAIS ---
+
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [totalPago, setTotalPago] = useState(0);
   const [totalNaoPago, setTotalNaoPago] = useState(0);
   const [totalEsperado, setTotalEsperado] = useState(0);
 
-  // Estados para controlar os modais
   const [modalResumoVisivel, setModalResumoVisivel] = useState(false);
   const [modalConfigVisivel, setModalConfigVisivel] = useState(false);
-
-  // NOVO ESTADO: Controla o modo de edição da lista
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Carrega configs
+  // Carrega os valores do contexto para o modal quando ele abre
   useEffect(() => {
-    async function carregarConfigMensalidade() {
-      try {
-        const config = await getMensalidade();
-        const valorAtual = config ? config.valor : 380;
-        const dataAtual = config ? parseDataISO(config.dataVencimento) : new Date();
+    setValorModal(valorMensalidadeContext);
+    setDataModal(dataVencimentoContext);
+  }, [valorMensalidadeContext, dataVencimentoContext]);
 
-        setValorMensalidade(valorAtual.toString());
-        setDataVencimento(dataAtual);
-        
-        await carregarAlunos(); 
+  // Calcula o resumo (usa valorMensalidadeContext)
+  useEffect(() => {
+    const valorNum = parseFloat(valorMensalidadeContext) || 0; // Usa valor do contexto
+    let pagos = 0;
+    alunos.forEach(aluno => {
+        if (aluno.status === "Pago") {
+            pagos++;
+        }
+    });
+    const naoPagos = alunos.length - pagos;
+    setTotalPago(pagos);
+    setTotalNaoPago(naoPagos);
+    setTotalEsperado(alunos.length * valorNum);
+  }, [alunos, valorMensalidadeContext]); // Depende do valor do contexto
 
-      } catch (error) {
-        console.error("Erro ao carregar dados da mensalidade:", error);
-        Alert.alert("Erro", "Não foi possível carregar os dados.");
-        setValorMensalidade("380"); // Fallback
-        setDataVencimento(new Date()); // Fallback
-      }
+  // --- USAR FUNÇÃO DO CONTEXTO PARA SALVAR ---
+  const handleSalvarConfig = async () => {
+    // Chama a função do contexto passando os valores do modal
+    const sucesso = await atualizarConfigMensalidade(valorModal, dataModal);
+    if (sucesso) {
+      setModalConfigVisivel(false);
+      Alert.alert("Sucesso", "Configurações de mensalidade salvas.");
+      // Não precisa mais recarregar alunos aqui, o contexto faz isso
     }
-    carregarConfigMensalidade();
-  }, []); // Dependência vazia para carregar uma vez
+    // Alertas de erro são tratados dentro de atualizarConfigMensalidade
+  };
+  // --- FIM ---
 
-    // Calcula o resumo
-    useEffect(() => {
-        const valorNum = parseFloat(valorMensalidade) || 0;
-        let pagos = 0;
-        alunos.forEach(aluno => {
-            if (aluno.status === "Pago") {
-                pagos++;
-            }
-        });
-        const naoPagos = alunos.length - pagos;
-        setTotalPago(pagos);
-        setTotalNaoPago(naoPagos);
-        setTotalEsperado(alunos.length * valorNum);
-    }, [alunos, valorMensalidade]);
-
-
-    const handleSalvarConfig = async () => {
-        const valor = parseFloat(valorMensalidade);
-        const dataFormatada = formatarDataISO(dataVencimento);
-
-        if (isNaN(valor) || valor <= 0) {
-        Alert.alert("Valor Inválido", "Por favor, insira um valor numérico positivo para a mensalidade.");
-        return;
-        }
-        if (!dataFormatada) {
-        Alert.alert("Data Inválida", "Por favor, selecione uma data de vencimento válida.");
-        return;
-        }
-
-        try {
-        await salvarMensalidade(valor, dataFormatada);
-        setModalConfigVisivel(false); 
-        Alert.alert("Sucesso", "Configurações de mensalidade salvas.", [
-             { text: "OK", onPress: () => carregarAlunos() } 
-        ]);
-        } catch (error) {
-        console.error("Erro ao salvar mensalidade:", error);
-        Alert.alert("Erro", "Não foi possível salvar as configurações.");
-        }
-    };
-
-    const handleToggleStatus = async (aluno) => {
-        if (!isEditMode) return; 
-
-        const novoStatus = aluno.status === "Pago" ? "Não Pago" : "Pago";
-        try {
-            await updateAlunoStatus(aluno.id, novoStatus, mesAnoVisivel);
-        } catch (error) {
-            console.error("Erro ao atualizar status do aluno:", error);
-            Alert.alert("Erro", "Não foi possível atualizar o status do aluno.");
-        }
-    };
-
+  const handleToggleStatus = async (aluno) => {
+      if (!isEditMode) return;
+      const novoStatus = aluno.status === "Pago" ? "Não Pago" : "Pago";
+      try {
+          // Usa a função do contexto para atualizar o status
+          await updateAlunoStatus(aluno.id, novoStatus, mesAnoVisivel);
+      } catch (error) {
+          // O AlunosContext já deve mostrar um Alert em caso de erro
+          console.error("Erro ao atualizar status (Tela Mensalidades):", error);
+      }
+  };
 
   const aoSelecionarData = (event, selectedDate) => {
+    const currentDate = selectedDate || dataModal; // Usa a data atual do modal se nada for selecionado
     setMostrarDatePicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setDataVencimento(selectedDate);
-    }
+    setDataModal(currentDate); // Atualiza o estado LOCAL do modal
   };
+
 
   const renderAlunoItem = ({ item }) => (
     <TouchableOpacity
       style={[
-          styles.cardAluno, 
+          styles.cardAluno,
           item.status === "Pago" ? styles.cardAlunoPago : styles.cardAlunoNaoPago,
           isEditMode && styles.cardAlunoEditavel
       ]}
@@ -172,30 +138,27 @@ export default function MensalidadesScreen({ navigation }) {
   );
 
   return (
-    // <SafeAreaView style={styles.safeArea}>
     <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
-         {/* Header com botões de Resumo e Config */}
          <View style={styles.headerNav}>
            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.botaoVoltar}>
                <Image source={require('../assets/voltar.png')} style={styles.iconeVoltar} />
            </TouchableOpacity>
-           
+
            <TouchableOpacity onPress={() => setModalResumoVisivel(true)} style={styles.botaoHeaderIcone}>
                 <Image source={require('../assets/historico.png')} style={styles.iconeHeader} />
            </TouchableOpacity>
 
            <Texto style={styles.titulo}>Mensalidades</Texto>
-           
+
            <TouchableOpacity onPress={() => setModalConfigVisivel(true)} style={styles.botaoHeaderIcone}>
                 <Image source={require('../assets/configuracoes.png')} style={styles.iconeHeader} />
            </TouchableOpacity>
-           
-           <View style={{ width: 28 }} /> 
+
+           <View style={{ width: 28 }} />
          </View>
 
-        {/* Navegação de Mês */}
         <View style={styles.navegacaoMesContainer}>
             <TouchableOpacity onPress={mesAnterior} style={styles.botaoNavMes}>
                 <Texto style={styles.botaoTextoNavMes}>{"< Anterior"}</Texto>
@@ -210,7 +173,6 @@ export default function MensalidadesScreen({ navigation }) {
             </TouchableOpacity>
         </View>
 
-        {/* Cabeçalho da Lista com Botão Editar/Concluir */}
         <View style={styles.listaHeaderContainer}>
             <Texto style={styles.subtituloLista}>Alunos</Texto>
             {isEditMode ? (
@@ -225,13 +187,11 @@ export default function MensalidadesScreen({ navigation }) {
             )}
         </View>
 
-         {/* Helper Text (Aparece apenas em modo de edição) */}
          {isEditMode && (
             <Texto style={styles.editHelperText}>Toque em um aluno para alterar o status de pagamento.</Texto>
          )}
 
 
-        {/* Lista de Alunos (ocupa a maior parte da tela) */}
         <FlatList
           data={alunos}
           renderItem={renderAlunoItem}
@@ -240,6 +200,7 @@ export default function MensalidadesScreen({ navigation }) {
           ListEmptyComponent={
             <Texto style={styles.textoVazio}>Nenhum aluno cadastrado.</Texto>
           }
+           extraData={alunos} // Garante re-renderização quando 'alunos' (com status) mudar
         />
       </View>
 
@@ -267,7 +228,8 @@ export default function MensalidadesScreen({ navigation }) {
                 </View>
                 <View style={styles.resumoLinha}>
                     <Texto style={styles.resumoLabel}>Valor Esperado:</Texto>
-                    <Texto style={styles.resumoValor}>R$ {totalEsperado.toFixed(2)}</Texto>
+                    {/* Usa valorMensalidadeContext para o cálculo, mas exibe valorModal no input */}
+                    <Texto style={styles.resumoValor}>R$ {(alunos.length * (parseFloat(valorMensalidadeContext) || 0)).toFixed(2)}</Texto>
                 </View>
                  <TouchableOpacity style={styles.botaoModalFechar} onPress={() => setModalResumoVisivel(false)}>
                     <Texto style={styles.botaoTexto}>Fechar</Texto>
@@ -286,33 +248,34 @@ export default function MensalidadesScreen({ navigation }) {
             <TouchableOpacity style={styles.modalFundo} activeOpacity={1} onPressOut={() => setModalConfigVisivel(false)}>
                 <TouchableOpacity style={styles.modalBox} activeOpacity={1}>
                     <Texto style={styles.modalTitulo}>Configurações</Texto>
-                    
+
                     <Texto style={styles.label}>Valor da Mensalidade (R$):</Texto>
                     <TextInput
                         style={styles.inputConfig}
                         keyboardType="numeric"
-                        value={valorMensalidade}
-                        onChangeText={setValorMensalidade}
+                        value={valorModal} // Usa estado local do modal
+                        onChangeText={setValorModal} // Atualiza estado local
                     />
-                    
+
                     <Texto style={styles.label}>Próximo Vencimento:</Texto>
                     <TouchableOpacity
                         style={styles.inputConfig}
                         onPress={() => setMostrarDatePicker(true)}
                     >
-                        <Texto style={styles.dataTexto}>{formatarData(dataVencimento)}</Texto>
+                        {/* Exibe a data do estado LOCAL do modal */}
+                        <Texto style={styles.dataTexto}>{formatarData(dataModal)}</Texto>
                     </TouchableOpacity>
-                    
+
                     {mostrarDatePicker && (
                         <DateTimePicker
-                        value={dataVencimento || new Date()}
+                        value={dataModal || new Date()} // Usa estado local
                         mode="date"
                         display={Platform.OS === "ios" ? "spinner" : "default"}
-                        onChange={aoSelecionarData}
-                        minimumDate={new Date()}
+                        onChange={aoSelecionarData} // Atualiza estado local
+                        minimumDate={new Date()} // Pode ajustar conforme necessário
                         />
                     )}
-                    
+
                     <View style={styles.botoesModalContainer}>
                         <TouchableOpacity style={[styles.botaoModalAcao, styles.botaoCancelar]} onPress={() => setModalConfigVisivel(false)}>
                             <Texto style={styles.botaoTexto}>Cancelar</Texto>
@@ -327,11 +290,10 @@ export default function MensalidadesScreen({ navigation }) {
         </Modal>
 
     </View>
-    // </SafeAreaView>
   );
 }
 
-// Estilos Atualizados
+// Estilos (mantidos como antes, apenas ajuste nomes se necessário)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -349,11 +311,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 15,
-    paddingHorizontal: 5, 
+    paddingHorizontal: 5,
   },
   botaoVoltar: {
      padding: 5,
-     width: 28, 
+     width: 28,
      alignItems: 'flex-start'
   },
   iconeVoltar: {
@@ -363,7 +325,7 @@ const styles = StyleSheet.create({
   },
    botaoHeaderIcone: {
        padding: 5,
-       width: 43, 
+       width: 43,
        alignItems: 'flex-end'
    },
    iconeHeader: {
@@ -414,7 +376,7 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 5, 
+      marginBottom: 5,
       paddingHorizontal: 5,
   },
   subtituloLista: {
@@ -433,7 +395,7 @@ const styles = StyleSheet.create({
       borderRadius: 8,
   },
   botaoSalvar: { // Botão Concluir
-      backgroundColor: '#0B49C1', 
+      backgroundColor: '#0B49C1',
   },
   botaoHeaderAcaoTexto: {
       color: '#AAB1C4',
@@ -446,7 +408,7 @@ const styles = StyleSheet.create({
        height: 16,
        tintColor: '#AAB1C4',
   },
-  editHelperText: { 
+  editHelperText: {
       color: '#AAB1C4',
       fontSize: 12,
       textAlign: 'center',
@@ -477,12 +439,12 @@ const styles = StyleSheet.create({
       backgroundColor: "#1c2337",
       borderColor: "orange",
   },
-  cardAlunoEditavel: { 
-      // Em modo de edição, talvez uma leve opacidade ou borda extra
+  cardAlunoEditavel: {
+      // Pode adicionar um efeito visual sutil aqui se desejar
   },
   nomeAluno: {
     color: "white",
-    fontSize: 16, 
+    fontSize: 16,
      flex: 1,
      marginRight: 8,
   },
@@ -503,7 +465,7 @@ const styles = StyleSheet.create({
        alignItems: 'center',
   },
   statusTextoBadge: {
-      color: '#050a24',
+      color: '#050a24', // Cor escura para contraste
       fontSize: 11,
       fontWeight: 'bold',
       textTransform: 'uppercase',
@@ -521,13 +483,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.7)',
+        padding: Platform.OS === 'ios' ? 20 : 0, // Padding para iOS evitar notch/dynamic island
     },
     modalBox: {
         backgroundColor: '#1c2337',
         borderRadius: 16,
         padding: 20,
         width: '90%',
-        maxWidth: 400,
+        maxWidth: 400, // Largura máxima para tablets
     },
     modalTitulo: {
         color: '#fff',
@@ -561,52 +524,52 @@ const styles = StyleSheet.create({
         color: "orange",
     },
      botaoModalFechar: {
-         backgroundColor: "#373e4f",
+         backgroundColor: "#373e4f", // Cor cinza para fechar
          paddingVertical: 12,
          borderRadius: 10,
          alignItems: "center",
-         marginTop: 20,
+         marginTop: 20, // Espaço acima do botão
      },
     // Estilos de Config (reutilizados no modal)
     label: {
-        color: "#AAB1C4",
+        color: "#AAB1C4", // Cinza claro para labels
         fontSize: 16,
         marginBottom: 8,
-        marginTop: 5,
+        marginTop: 5, // Espacinho antes do input
     },
      inputConfig: {
-        backgroundColor: "#373e4f",
+        backgroundColor: "#373e4f", // Cinza escuro para inputs
         borderRadius: 8,
         paddingHorizontal: 15,
         paddingVertical: 12,
         fontSize: 16,
-        color: "#ffffff",
+        color: "#ffffff", // Texto branco
         marginBottom: 10,
-        justifyContent: 'center',
+        justifyContent: 'center', // Para alinhar texto no TouchableOpacity
     },
      dataTexto: {
       color: "#fff",
-      fontSize: 15,
+      fontSize: 15, // Um pouco menor talvez
     },
     botoesModalContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 20,
-        gap: 10,
+        marginTop: 20, // Espaço acima dos botões
+        gap: 10, // Espaço entre os botões
     },
     botaoModalAcao: {
-        flex: 1,
+        flex: 1, // Faz os botões dividirem o espaço
         paddingVertical: 12,
         borderRadius: 10,
         alignItems: 'center',
     },
     botaoCancelar: {
-        backgroundColor: "#373e4f",
+        backgroundColor: "#373e4f", // Cinza para Cancelar
     },
     botaoSalvarConfig: {
-        backgroundColor: "#0B49C1",
+        backgroundColor: "#0B49C1", // Azul para Salvar
     },
-    botaoTexto: {
+    botaoTexto: { // Texto para botões de modal (Fechar, Salvar, Cancelar)
         color: "#fff",
         fontSize: 16,
         fontWeight: "bold",

@@ -101,20 +101,8 @@ export default function LembretesScreen({ navigation }) {
     setModalVisible(false);
   };
 
-  const confirmarRemocao = (id) => {
-      Alert.alert(
-          "Confirmar Exclusão",
-          "Tem certeza que deseja excluir este lembrete?",
-          [
-              { text: "Cancelar", style: "cancel" },
-              {
-                  text: "Excluir",
-                  style: "destructive",
-                  onPress: () => removerLembrete(id) //
-              }
-          ]
-      )
-  }
+  // --- FUNÇÃO DE CONFIRMAÇÃO REMOVIDA DAQUI ---
+  // const confirmarRemocao = (id) => { ... }
 
   const abrirDatePicker = () => setMostrarDatePicker(true);
   const abrirHoraPicker = () => setMostrarHoraPicker(true);
@@ -177,14 +165,15 @@ export default function LembretesScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.excluirContainer}>
+                {/* --- CORREÇÃO AQUI --- */}
+                {/* Chama diretamente a função 'removerLembrete' do contexto, que já tem o Alert */}
                 <TouchableOpacity
                   style={styles.botaoRemover}
-                  onPress={() => confirmarRemocao(item.id)} // Passa o ID para remoção
+                  onPress={() => removerLembrete(item.id)} // Passa o ID para remoção
                 >
-                  {/* Ícone de Lixeira (opcional) */}
-                  {/* <Image source={require('../assets/lixeira.png')} style={styles.iconeLixeira} /> */}
                   <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
                 </TouchableOpacity>
+                {/* --- FIM DA CORREÇÃO --- */}
               </View>
             </View>
           )}
@@ -277,6 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
     paddingTop:30, // Aumentado para dar espaço ao header
+    paddingVertical: 30,
   },
   conteudo: {
     flex: 1,

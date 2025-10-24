@@ -4,33 +4,32 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert, // Mantido caso necessário em outros lugares
-  // TextInput removido
-  // Modal removido
+  Alert,
   Dimensions,
   StatusBar,
-  Platform, // Mantido caso necessário
+  Platform,
 } from "react-native";
 import * as Location from "expo-location";
-// DateTimePicker removido
 
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
 import { ViagemContext } from "../components/ViagemContext";
+import { AlunosContext } from "../components/AlunosContext"; // Importar AlunosContext
 
-import { getUsuario, getMensalidade } from "../database/database"; // Remover salvarMensalidade daqui
+import { getUsuario } from "../database/database"; // Manter getUsuario
 
 import Texto from "../components/Texto";
-import BarraNavegacao from "../components/BarraNavegacao";
+import BarraNavegacao from "../components/BarraNavegacao"; // Mantenha a importação
 import Header from "../components/Header";
 
 const { width, height } = Dimensions.get("window");
 
+// Manter formatarData
 function formatarData(data) {
   if (!data) return "";
-  const dia = data.getDate().toString().padStart(2, "0");
-  const mes = (data.getMonth() + 1).toString().padStart(2, "0");
-  const ano = data.getFullYear();
+    const dia = data.getUTCDate().toString().padStart(2, "0"); // Usar getUTCDate
+    const mes = (data.getUTCMonth() + 1).toString().padStart(2, "0"); // Usar getUTCMonth
+    const ano = data.getUTCFullYear(); // Usar getUTCFullYear
   return `${dia}/${mes}/${ano}`;
 }
 
@@ -38,14 +37,12 @@ export default function Inicial({ navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [localizacao, setLocalizacao] = useState("Buscando...");
   const [saudacao, setSaudacao] = useState("");
-  // Estado apenas para exibir o valor carregado
-  const [valorMensalidadeExibido, setValorMensalidadeExibido] = useState("0");
-  const [dataVencimentoExibida, setDataVencimentoExibida] = useState(new Date());
-
 
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
   const { viagemDeVoltaPendente } = useContext(ViagemContext);
+  // --- USAR VALORES DO ALUNOSCONTEXT ---
+  const { valorMensalidade, dataVencimento } = useContext(AlunosContext);
 
   useEffect(() => {
     const hora = new Date().getHours();
@@ -54,37 +51,23 @@ export default function Inicial({ navigation }) {
     else setSaudacao("Boa noite, ");
   }, []);
 
-  useEffect(() => {
-    async function carregarDados() {
+ // --- MANTER USEEFFECT PARA USUARIO ---
+ useEffect(() => {
+    async function carregarUsuario() {
       try {
         const usuarioDB = await getUsuario();
         setUsuario(usuarioDB);
-
-        const mensalidadeBanco = await getMensalidade();
-        if (mensalidadeBanco) {
-          setValorMensalidadeExibido(mensalidadeBanco.valor.toFixed(2));
-          // Convertendo a string YYYY-MM-DD para Date para exibição
-          const parts = mensalidadeBanco.dataVencimento.split('-');
-          if (parts.length === 3) {
-              // Mês é 0-indexado no construtor Date
-              setDataVencimentoExibida(new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
-          } else {
-               setDataVencimentoExibida(new Date()); // Fallback
-          }
-        } else {
-            setValorMensalidadeExibido("380.00"); // Valor padrão
-            setDataVencimentoExibida(new Date()); // Data Padrão
-        }
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
+        console.error("Erro ao buscar usuário:", error);
       }
     }
-    carregarDados();
-  }, []);
+    carregarUsuario();
+  }, []); // Executa só uma vez ao montar
+
 
   useEffect(() => {
     const obterLocalizacao = async () => {
-      try {
+       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           setLocalizacao("Permissão negada");
@@ -110,7 +93,7 @@ export default function Inicial({ navigation }) {
   }, []);
 
    const navegarParaMensalidades = () => {
-      navigation.navigate("Mensalidades"); // Navega para a nova tela
+      navigation.navigate("Mensalidades");
    };
 
 
@@ -143,20 +126,24 @@ export default function Inicial({ navigation }) {
 
             <TouchableOpacity
               style={styles.card}
-              onPress={navegarParaMensalidades} // Alterar aqui
+              onPress={navegarParaMensalidades}
             >
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
                 <Texto style={styles.cardTextBold}>
-                  Valor atual: R$ {valorMensalidadeExibido}
+                  {/* Usa valorMensalidade do contexto */}
+                  Valor atual: R$ {parseFloat(valorMensalidade || 0).toFixed(2)}
                 </Texto>
-                 <Texto style={styles.cardSub}>Vencimento: {formatarData(dataVencimentoExibida)}</Texto>
+                 <Texto style={styles.cardSub}>
+                    {/* Usa dataVencimento do contexto */}
+                    Vencimento: {formatarData(dataVencimento)}
+                 </Texto>
                  <Texto style={styles.cardSub}>Toque para gerenciar</Texto>
               </View>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.grid}>
+           <View style={styles.grid}>
             <TouchableOpacity
               style={styles.miniCard}
               onPress={() => navigation.navigate("Veiculos")}
@@ -218,20 +205,20 @@ export default function Inicial({ navigation }) {
           </TouchableOpacity>
         </View>
 
-         {/* Modal removido */}
-
+         {/* Adicione a BarraNavegacao de volta aqui */}
         <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
       </View>
     </>
   );
 }
 
+// Estilos (mantidos)
 const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
       backgroundColor: "#050a24",
       paddingTop: 30,
-      paddingVertical: 30,
+      // Remova paddingVertical: 30 se a BarraNavegacao ficar por cima
     },
     header: {
       top: -10,
@@ -240,8 +227,8 @@ const styles = StyleSheet.create({
       flex: 1,
       paddingHorizontal: width > 768 ? width * 0.1 : 16,
       alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 20,
+      justifyContent: "space-between", // Ajuste se necessário
+      // Remova marginBottom: 20 se a BarraNavegacao ficar por cima
     },
     boasVindas: {
       color: "white",
@@ -319,28 +306,6 @@ const styles = StyleSheet.create({
     botaoText: {
       color: "white",
       fontSize: width > 768 ? 24 : 20,
-      fontWeight: "bold",
-    },
-     modalButtons: { // Mantido caso precise de modais em outros lugares, mas pode ser removido se não
-      flexDirection: "row",
-      marginTop: 20,
-      gap: 10,
-    },
-    modalButton: { // Mantido caso precise de modais em outros lugares
-      flex: 1,
-      paddingVertical: 16,
-      borderRadius: 16,
-      alignItems: "center",
-    },
-    saveButton: { // Mantido caso precise de modais em outros lugares
-      backgroundColor: "#0B49C1",
-    },
-    cancelButton: { // Mantido caso precise de modais em outros lugares
-      backgroundColor: "#373e4f",
-    },
-    modalButtonText: { // Mantido caso precise de modais em outros lugares
-      color: "white",
-      fontSize: 18,
       fontWeight: "bold",
     },
 });
