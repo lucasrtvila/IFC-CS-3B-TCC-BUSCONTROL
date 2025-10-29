@@ -41,8 +41,8 @@ export default function LembretesScreen({ navigation }) {
   const [tituloInput, setTituloInput] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
-  const [dataInput, setDataInput] = useState(formatarData(new Date()));
-  const [horaInput, setHoraInput] = useState(formatarHora(new Date()));
+  const [dataInput, setDataInput] = useState(""); // Começa vazio por padrão
+  const [horaInput, setHoraInput] = useState(""); // Começa vazio por padrão
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [mostrarHoraPicker, setMostrarHoraPicker] = useState(false);
 
@@ -75,10 +75,12 @@ export default function LembretesScreen({ navigation }) {
       setEditarIndex(null);
       setTituloInput("");
       const hoje = new Date();
-      setDataSelecionada(hoje);
-      setHoraSelecionada(hoje);
-      setDataInput(formatarData(hoje));
-      setHoraInput(formatarHora(hoje));
+      setDataSelecionada(hoje); // Mantém para inicializar os pickers
+      setHoraSelecionada(hoje); // Mantém para inicializar os pickers
+      // MODIFICAÇÃO AQUI: Inicia campos de texto vazios
+      setDataInput("");
+      setHoraInput("");
+      // FIM DA MODIFICAÇÃO
     }
     setMostrarDatePicker(false);
     setMostrarHoraPicker(false);
@@ -97,12 +99,9 @@ export default function LembretesScreen({ navigation }) {
     } else {
       adicionarLembrete(tituloInput, dataInput, horaInput); //
     }
-    
+
     setModalVisible(false);
   };
-
-  // --- FUNÇÃO DE CONFIRMAÇÃO REMOVIDA DAQUI ---
-  // const confirmarRemocao = (id) => { ... }
 
   const abrirDatePicker = () => setMostrarDatePicker(true);
   const abrirHoraPicker = () => setMostrarHoraPicker(true);
@@ -137,7 +136,7 @@ export default function LembretesScreen({ navigation }) {
         </TouchableOpacity>
         <Texto style={styles.titulo}>Lembretes</Texto>
         {/* Placeholder para centralizar título */}
-        <View style={{ width: 40 }}/> 
+        <View style={{ width: 40 }}/>
       </View>
 
       <View style={styles.conteudo}>
@@ -165,15 +164,13 @@ export default function LembretesScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.excluirContainer}>
-                {/* --- CORREÇÃO AQUI --- */}
-                {/* Chama diretamente a função 'removerLembrete' do contexto, que já tem o Alert */}
+                {/* Chama diretamente a função 'removerLembrete' do contexto */}
                 <TouchableOpacity
                   style={styles.botaoRemover}
                   onPress={() => removerLembrete(item.id)} // Passa o ID para remoção
                 >
                   <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
                 </TouchableOpacity>
-                {/* --- FIM DA CORREÇÃO --- */}
               </View>
             </View>
           )}
@@ -191,7 +188,7 @@ export default function LembretesScreen({ navigation }) {
               </Texto>
 
               <Texto style={styles.label}>Título</Texto>
-              <TextInput // O TextInput estava sendo usado aqui sem importar
+              <TextInput
                 style={styles.input}
                 placeholder="Digite o título do lembrete"
                 placeholderTextColor="#AAB1C4" // Cor mais suave
@@ -204,7 +201,7 @@ export default function LembretesScreen({ navigation }) {
                 onPress={abrirDatePicker}
                 style={styles.inputData} // Estilo de input, mas clicável
               >
-                <Texto style={styles.dataHoraTexto}> 
+                <Texto style={dataInput ? styles.dataHoraTexto : styles.placeholderTexto}>
                   {dataInput || "Selecionar data"}
                 </Texto>
               </TouchableOpacity>
@@ -222,7 +219,7 @@ export default function LembretesScreen({ navigation }) {
                 onPress={abrirHoraPicker}
                 style={styles.inputData} // Estilo de input, mas clicável
               >
-                <Texto style={styles.dataHoraTexto}>
+                 <Texto style={horaInput ? styles.dataHoraTexto : styles.placeholderTexto}>
                   {horaInput || "Selecionar hora"}
                 </Texto>
               </TouchableOpacity>
@@ -244,11 +241,11 @@ export default function LembretesScreen({ navigation }) {
                 >
                   <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.botaoModal} // Aplica só o estilo base (azul)
                   onPress={handleSalvarLembrete}
-                > 
+                >
                   <Texto style={styles.botaoModalTexto}>Salvar</Texto>
                 </TouchableOpacity>
               </View>
@@ -260,6 +257,7 @@ export default function LembretesScreen({ navigation }) {
   );
 }
 
+// Estilos (incluindo placeholderTexto)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -276,7 +274,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between", // Alterado para space-between
-    // paddingHorizontal: 20, // Removido, container já tem
     marginBottom: 20,
   },
   botaoVoltar: {
@@ -336,7 +333,6 @@ const styles = StyleSheet.create({
     // Mantém como está ou ajusta se necessário
   },
   botaoRemover: {
-    // Mantém como está ou ajusta se necessário
     paddingHorizontal: 15, // Adiciona padding horizontal
     height: 35,
     borderRadius: 8,
@@ -349,7 +345,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff", // Branco para melhor contraste
   },
-  botaoNovo: { 
+  botaoNovo: {
     backgroundColor: "#0B49C1",
     paddingVertical: 16, // Aumentado padding
     borderRadius: 16,
@@ -357,7 +353,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: "100%",
   },
-  botaoTextoNovo: { 
+  botaoTextoNovo: {
     color: "#fff",
     fontSize: 18, // Reduzido
     fontWeight: "bold",
@@ -409,11 +405,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Centraliza texto verticalmente
     height: 48, // Altura similar ao TextInput
   },
-  dataHoraTexto: { // Estilo para o texto dentro dos TouchableOpacity
+  dataHoraTexto: { // Estilo para o texto DENTRO dos TouchableOpacity QUANDO HÁ VALOR
       fontSize: 16,
       color: "#fff",
   },
-  // --- Estilos Corrigidos dos Botões do Modal ---
+  placeholderTexto: { // Estilo para o texto DENTRO dos TouchableOpacity QUANDO ESTÁ VAZIO
+      fontSize: 16,
+      color: "#AAB1C4", // Cor do placeholder
+  },
   modalBotoes: {
     flexDirection: "row",
     justifyContent: "space-between", // Espaça os botões
@@ -435,5 +434,4 @@ const styles = StyleSheet.create({
     fontSize: 16, // Tamanho padrão
     fontWeight: "bold",
   },
-  // --- FIM CORREÇÃO ---
 });

@@ -212,7 +212,6 @@ export default function AlunosScreen({ navigation }) {
     setNome("");
     setCPF("");
     setTelefone("");
-    setStatus("Não Pago");
     setParadaId(null);
     setModalAdicionarVisivel(false);
   };
@@ -283,26 +282,27 @@ export default function AlunosScreen({ navigation }) {
                   * AQUI ESTÁ A MUDANÇA SOLICITADA
                   ******************************************************
                 */}
-                <View style={styles.ladoDireito}>
-                  {item.telefone && (
-                    <TouchableOpacity
-                      style={styles.botaoWhatsapp}
-                      onPress={() => abrirWhatsApp(item.telefone)}
-                    >
-                      <Image
-                        source={require("../assets/whatsapp.png")}
-                        style={styles.iconeWhatsapp}
-                      />
-                    </TouchableOpacity>
-                  )}
-                  <Texto
-                    style={
-                      item.status === "Pago" ? styles.pago : styles.naoPago
-                    }
-                  >
-                    {item.status}
-                  </Texto>
-                </View>
+// --- dentro do renderItem (card) ---
+<View style={styles.ladoDireito}>
+  <Texto
+    style={item.status === "Pago" ? styles.pago : styles.naoPago}
+  >
+    {item.status}
+  </Texto>
+
+  {item.telefone && (
+    <TouchableOpacity
+      style={styles.botaoWhatsapp}
+      onPress={() => abrirWhatsApp(item.telefone)}
+    >
+      <Image
+        source={require("../assets/whatsapp.png")}
+        style={styles.iconeWhatsapp}
+      />
+    </TouchableOpacity>
+  )}
+</View>
+
                 {/* ******************************************************
                   * FIM DA MUDANÇA
                   ******************************************************
@@ -509,96 +509,84 @@ export default function AlunosScreen({ navigation }) {
       </Modal>
 
       <Modal visible={modalEditarVisivel} animationType="slide" transparent>
-        <View style={styles.modalFundo}>
-          <View style={styles.modalBox}>
-            <Texto style={styles.modalTitulo}>Editar Aluno</Texto>
-            <TextInput
-              style={styles.input}
-              placeholder="Novo nome"
-              placeholderTextColor="#cfcfcf"
-              value={novoNome}
-              onChangeText={setNovoNome}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="CPF (opcional)"
-              placeholderTextColor="#cfcfcf"
-              value={novoCPF}
-              onChangeText={(text) => setNovoCPF(formatarCPF(text))}
-              keyboardType="numeric"
-              maxLength={14}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Telefone (opcional)"
-              placeholderTextColor="#cfcfcf"
-              value={novoTelefone}
-              onChangeText={(text) => setNovoTelefone(formatarTelefone(text))}
-              keyboardType="numeric"
-              maxLength={15}
-            />
-            <RNPickerSelect
-              onValueChange={setNovoParadaId}
-              value={novoParadaId}
-              placeholder={{
-                label: "Selecione uma parada",
-                value: null,
-              }}
-              items={paradas.map((parada) => ({
-                label: parada.nome,
-                value: parada.id,
-                key: parada.id,
-              }))}
-              style={{
-                inputIOS: styles.pickerInput,
-                inputAndroid: styles.pickerInput,
-                placeholder: { color: "#cfcfcf" },
-              }}
-              useNativeAndroidPickerStyle={false}
-            />
-            <Texto style={styles.h1}>Status:</Texto>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setEditDropdownVisivel(!editDropdownVisivel)}
-            >
-              <Texto style={styles.dropdownTexto}>{novoStatus}</Texto>
-            </TouchableOpacity>
+  <View style={styles.modalFundo}>
+    <View style={styles.modalBox}>
+      <Texto style={styles.modalTitulo}>Editar Aluno</Texto>
 
-            {editDropdownVisivel && (
-              <View style={styles.dropdownOpcoes}>
-                <TouchableOpacity onPress={() => { setNovoStatus("Pago"); setEditDropdownVisivel(false); }}>
-                  <Texto style={styles.opcaoTexto}>Pago</Texto>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setNovoStatus("Não Pago"); setEditDropdownVisivel(false); }}>
-                  <Texto style={styles.opcaoTextoUltima}>Não Pago</Texto>
-                </TouchableOpacity>
-              </View>
-            )}
+      <TextInput
+        style={styles.input}
+        placeholder="Novo nome"
+        placeholderTextColor="#cfcfcf"
+        value={novoNome}
+        onChangeText={setNovoNome}
+      />
 
-            <View style={styles.botoesModal}>
-              <TouchableOpacity
-                style={styles.botaoCancelar}
-                onPress={() => setModalEditarVisivel(false)}
-              >
-                <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
-              </TouchableOpacity>
+      <TextInput
+        style={styles.input}
+        placeholder="CPF (opcional)"
+        placeholderTextColor="#cfcfcf"
+        value={novoCPF}
+        onChangeText={(text) => setNovoCPF(formatarCPF(text))}
+        keyboardType="numeric"
+        maxLength={14}
+      />
 
-              <TouchableOpacity
-                style={styles.botaoModal}
-                onPress={salvarEdicao}
-              >
-                <Texto style={styles.botaoModalTexto}>Salvar</Texto>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={styles.botaoExcluir}
-              onPress={handleRemoverAluno}
-            >
-              <Texto style={styles.botaoModalTexto}>Excluir Aluno</Texto>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TextInput
+        style={styles.input}
+        placeholder="Telefone (opcional)"
+        placeholderTextColor="#cfcfcf"
+        value={novoTelefone}
+        onChangeText={(text) => setNovoTelefone(formatarTelefone(text))}
+        keyboardType="numeric"
+        maxLength={15}
+      />
+
+      <RNPickerSelect
+        onValueChange={setNovoParadaId}
+        value={novoParadaId}
+        placeholder={{
+          label: "Selecione uma parada",
+          value: null,
+        }}
+        items={paradas.map((parada) => ({
+          label: parada.nome,
+          value: parada.id,
+          key: parada.id,
+        }))}
+        style={{
+          inputIOS: styles.pickerInput,
+          inputAndroid: styles.pickerInput,
+          placeholder: { color: "#cfcfcf" },
+        }}
+        useNativeAndroidPickerStyle={false}
+      />
+
+      <View style={styles.botoesModal}>
+        <TouchableOpacity
+          style={styles.botaoCancelar}
+          onPress={() => setModalEditarVisivel(false)}
+        >
+          <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.botaoModal}
+          onPress={salvarEdicao}
+        >
+          <Texto style={styles.botaoModalTexto}>Salvar</Texto>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={styles.botaoExcluir}
+        onPress={handleRemoverAluno}
+      >
+        <Texto style={styles.botaoModalTexto}>Excluir Aluno</Texto>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </View>
   );
 }
@@ -663,11 +651,13 @@ const styles = StyleSheet.create({
   ladoEsquerdo: {
     flex: 1,
   },
-  ladoDireito: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-  },
+ladoDireito: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+},
+
+
   nome: {
     color: "white",
     fontSize: 18,

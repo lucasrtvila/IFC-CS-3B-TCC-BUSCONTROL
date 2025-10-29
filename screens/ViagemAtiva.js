@@ -162,7 +162,8 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     setAlunosNaParada(parada.alunos || []);
     setParadaSelecionadaNome(parada.nome);
     setParadaSelecionadaId(parada.id);
-    setAlunosSelecionadosNaParadaTemp(new Set());
+    // Inicializa a seleção temporária com os alunos já marcados anteriormente para essa parada (se houver)
+    setAlunosSelecionadosNaParadaTemp(new Set(alunosEmbarcadosNaIda[parada.id] || []));
     setModalAlunosVisivel(true);
   };
 
@@ -178,25 +179,45 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     });
   };
 
+  // --- FUNÇÃO handleConcluirParada MODIFICADA ---
   const handleConcluirParada = () => {
-     setAlunosEmbarcadosNaIda(prevState => ({
-         ...prevState,
-         [paradaSelecionadaId]: Array.from(alunosSelecionadosNaParadaTemp)
-     }));
+     // Verifica se todos os alunos da parada foram selecionados
+     const todosSelecionados = alunosNaParada.length > 0 && alunosSelecionadosNaParadaTemp.size === alunosNaParada.length;
+     const mensagemAlerta = todosSelecionados
+       ? "Todos os alunos da parada foram selecionados."
+       : "Faltou selecionar algum aluno nesta parada.";
 
-    setParadasAtivas((prevParadas) =>
-      prevParadas.filter((p) => p.id !== paradaSelecionadaId)
-    );
-    setModalAlunosVisivel(false);
-    setAlunosSelecionadosNaParadaTemp(new Set());
-    setParadaSelecionadaId(null);
-    setParadaSelecionadaNome("");
-    setAlunosNaParada([]);
+     // Exibe o alerta apropriado
+     Alert.alert(
+         "Confirmação de Parada",
+         mensagemAlerta,
+         [
+             {
+                 text: "OK",
+                 onPress: () => {
+                     // Continua com a lógica original APÓS o usuário pressionar OK
+                     setAlunosEmbarcadosNaIda(prevState => ({
+                         ...prevState,
+                         [paradaSelecionadaId]: Array.from(alunosSelecionadosNaParadaTemp)
+                     }));
+
+                     setParadasAtivas((prevParadas) =>
+                         prevParadas.filter((p) => p.id !== paradaSelecionadaId)
+                     );
+                     setModalAlunosVisivel(false);
+                     // Limpa estados do modal após fechar
+                     setAlunosSelecionadosNaParadaTemp(new Set());
+                     setParadaSelecionadaId(null);
+                     setParadaSelecionadaNome("");
+                     setAlunosNaParada([]);
+                 }
+             }
+         ]
+     );
   };
+  // --- FIM DA MODIFICAÇÃO ---
 
-  // --- MODIFICAÇÃO: Função separada para confirmar desembarque ---
   const confirmarDesembarque = (alunoId) => {
-    // Apenas marca o status, o filtro na FlatList fará o resto
     setAlunosNaVolta(prevState =>
       prevState.map(aluno =>
         aluno.id === alunoId ? { ...aluno, desembarcou: true } : aluno
@@ -204,22 +225,20 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     );
   };
 
-  // --- MODIFICAÇÃO: Função para exibir o Alerta ---
   const handleEntregarClick = (aluno) => {
     Alert.alert(
-      "Confirmar Entrega", // Título do Alerta
-      `Tem certeza que deseja marcar "${aluno.nome}" como entregue?`, // Mensagem
+      "Confirmar Entrega",
+      `Tem certeza que deseja marcar "${aluno.nome}" como entregue?`,
       [
-        { text: "Cancelar", style: "cancel" }, // Botão Cancelar
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Entregar",
-          style: "default", // Cor padrão (ou 'destructive' para vermelho)
-          onPress: () => confirmarDesembarque(aluno.id), // Chama a função de confirmação
+          style: "default",
+          onPress: () => confirmarDesembarque(aluno.id),
         },
       ]
     );
   };
-  // --- FIM MODIFICAÇÃO ---
 
   const renderParadaIda = ({ item }) => (
     <TouchableOpacity
@@ -246,7 +265,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
         </View>
         <TouchableOpacity
             style={styles.botaoEntregarAluno}
-            onPress={() => handleEntregarClick(item)} // Chama a função do Alerta
+            onPress={() => handleEntregarClick(item)}
         >
             <Texto style={styles.botaoEntregarTexto}>Entregar</Texto>
         </TouchableOpacity>
@@ -284,7 +303,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
              <>
               <Texto style={styles.subtitulo}>Alunos (Volta):</Texto>
               <FlatList
-                 data={alunosNaVolta.filter(aluno => !aluno.desembarcou)} // Filtra alunos não entregues
+                 data={alunosNaVolta.filter(aluno => !aluno.desembarcou)}
                 renderItem={renderAlunoVolta}
                 keyExtractor={(item) => item.id.toString()}
                 style={{ flex: 1 }}
@@ -328,6 +347,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* --- MODAL MODIFICADO --- */}
         <Modal visible={modalAlunosVisivel} animationType="fade" transparent>
              <View style={styles.modalFundo}>
                 <View style={styles.modalBox}>
@@ -355,15 +375,26 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                         <Texto style={styles.semAlunosTexto}>Nenhum aluno nesta parada.</Texto>
                     }
                 />
-                <TouchableOpacity
-                    style={styles.botaoFecharModal}
-                    onPress={handleConcluirParada}
-                >
-                    <Texto style={styles.botaoTexto}>Concluir Parada</Texto>
-                </TouchableOpacity>
+                {/* --- BOTÕES DO MODAL MODIFICADOS --- */}
+                <View style={styles.botoesModalContainer}>
+                    <TouchableOpacity
+                        style={[styles.botaoModalAcao, styles.botaoCancelarModal]} // Botão Cancelar
+                        onPress={() => setModalAlunosVisivel(false)} // Apenas fecha o modal
+                    >
+                        <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.botaoModalAcao, styles.botaoConcluirParada]} // Botão Concluir
+                        onPress={handleConcluirParada} // Chama a função modificada
+                    >
+                        <Texto style={styles.botaoModalTexto}>Concluir Parada</Texto>
+                    </TouchableOpacity>
+                </View>
+                 {/* --- FIM DA MODIFICAÇÃO DOS BOTÕES --- */}
                 </View>
             </View>
         </Modal>
+        {/* --- FIM DA MODIFICAÇÃO DO MODAL --- */}
       </View>
     </>
   );
@@ -478,21 +509,18 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 16,
     },
-    // --- MODIFICAÇÃO: Estilo do botão "Entregar" ---
-    botaoEntregarAluno: { // Botão minimalista
+    botaoEntregarAluno: {
         paddingHorizontal: 10,
         paddingVertical: 8,
         borderRadius: 8,
         marginLeft: 10,
         backgroundColor: 'limegreen',
-        // Sem fundo
     },
-    botaoEntregarTexto: { // Texto verde
+    botaoEntregarTexto: {
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
     },
-    // --- FIM MODIFICAÇÃO ---
       // Botão de Encerrar
       botaoEncerrar: {
         backgroundColor: "#c41628ff",
@@ -506,7 +534,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
       },
-      // Estilos do Modal (Ida)
+      // --- Estilos do Modal (Ida) MODIFICADOS ---
       modalFundo: {
         flex: 1,
         justifyContent: "center",
@@ -518,7 +546,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 20,
         width: "90%",
-        maxHeight: "80%",
+        maxHeight: "80%", // Mantém altura máxima
       },
       modalTitulo: {
         color: "#fff",
@@ -528,7 +556,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
       },
       alunosList: {
-         maxHeight: Dimensions.get('window').height * 0.5,
+         maxHeight: Dimensions.get('window').height * 0.45, // Ajuste a altura se necessário
          marginBottom: 15,
       },
       alunoItem: {
@@ -537,11 +565,11 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 8,
         borderLeftWidth: 4,
-        borderLeftColor: '#c41628ff',
+        borderLeftColor: '#c41628ff', // Vermelho por padrão (não selecionado)
       },
       alunoItemSelected: {
-        backgroundColor: "#1E40AF",
-        borderLeftColor: 'limegreen',
+        backgroundColor: "#1E40AF", // Azul mais escuro quando selecionado
+        borderLeftColor: 'limegreen', // Verde quando selecionado
       },
        alunoItemText: {
         color: "#fff",
@@ -553,11 +581,29 @@ const styles = StyleSheet.create({
         marginVertical: 20,
         fontSize: 14,
       },
-      botaoFecharModal: {
-        backgroundColor: "#0B49C1",
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: "center",
-        marginTop: 10,
+      // --- NOVOS ESTILOS PARA BOTÕES DO MODAL ---
+      botoesModalContainer: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginTop: 15, // Espaço acima dos botões
+          gap: 10, // Espaço entre os botões
       },
+      botaoModalAcao: {
+          flex: 1, // Faz os botões dividirem o espaço
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+      },
+      botaoCancelarModal: {
+          backgroundColor: '#373e4f', // Cinza
+      },
+      botaoConcluirParada: {
+          backgroundColor: '#0B49C1', // Azul
+      },
+      botaoModalTexto: { // Texto para ambos botões
+        color: "white",
+        fontSize: 16,
+        fontWeight: "bold",
+      },
+      // --- FIM DOS NOVOS ESTILOS ---
 });
