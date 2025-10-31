@@ -344,7 +344,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <DateTimePicker
                   value={inicio}
                   mode="time"
-                  display="default"
+                  display="spinner"
                   onChange={onChangeInicio}
                 />
               )}
@@ -352,7 +352,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <DateTimePicker
                   value={final}
                   mode="time"
-                  display="default"
+                  display="spinner"
                   onChange={onChangeFinal}
                 />
               )}
@@ -360,7 +360,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <DateTimePicker
                   value={data}
                   mode="date"
-                  display="default"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={onChangeData}
                 />
               )}

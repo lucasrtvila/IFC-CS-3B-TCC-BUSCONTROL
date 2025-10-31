@@ -261,7 +261,7 @@ export default function LembretesScreen({ navigation }) {
                   value={horaSelecionada}
                   mode="time"
                   is24Hour={true}
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  display="spinner"
                   onChange={aoSelecionarHora}
                 />
               )}

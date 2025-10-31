@@ -163,7 +163,7 @@ export default function RotaScreen({ navigation }) {
                 <DateTimePicker
                   value={new Date()}
                   mode="time"
-                  display="default"
+                  display="spinner"
                   onChange={onChangeTime}
                 />
               )}
@@ -213,7 +213,7 @@ export default function RotaScreen({ navigation }) {
                 <DateTimePicker
                   value={new Date()}
                   mode="time"
-                  display="default"
+                  display="spinner"
                   onChange={(event, selectedDate) => {
                     setShowTimePicker(Platform.OS === "ios");
                     if (selectedDate)
