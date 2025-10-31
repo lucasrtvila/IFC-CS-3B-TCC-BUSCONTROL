@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+// Importe o CardStyleInterpolators
+import {
+  createStackNavigator,
+  CardStyleInterpolators,
+} from "@react-navigation/stack";
 import { useFonts } from "expo-font";
 
 // Telas
@@ -69,19 +73,40 @@ export default function App() {
               <NavigationContainer>
                 <Stack.Navigator
                   initialRouteName={initialRoute}
-                  screenOptions={{ headerShown: false }}
+                  // Adicione screenOptions aqui
+                  screenOptions={{
+                    headerShown: false,
+                    // Define a animação de transição para todas as telas
+                    cardStyleInterpolator:
+                      CardStyleInterpolators.forHorizontalIOS,
+                  }}
                 >
                   <Stack.Screen name="Cadastro" component={CadastroScreen} />
                   <Stack.Screen name="Veiculos" component={VeiculosScreen} />
                   <Stack.Screen name="Inicial" component={InicialScreen} />
                   <Stack.Screen name="Alunos" component={AlunosScreen} />
-                  <Stack.Screen name="Mensalidades" component={MensalidadesScreen} />
+                  <Stack.Screen
+                    name="Mensalidades"
+                    component={MensalidadesScreen}
+                  />
                   <Stack.Screen name="Lembretes" component={LembretesScreen} />
                   <Stack.Screen name="Rota" component={RotaScreen} />
-                  <Stack.Screen name="NovaViagem" component={NovaViagemScreen} />
-                  <Stack.Screen name="ViagemAtiva" component={ViagemAtivaScreen} />
-                  <Stack.Screen name="ListaPresenca" component={ListaPresencaScreen} />
-                  <Stack.Screen name="HistoricoViagens" component={HistoricoViagensScreen} />
+                  <Stack.Screen
+                    name="NovaViagem"
+                    component={NovaViagemScreen}
+                  />
+                  <Stack.Screen
+                    name="ViagemAtiva"
+                    component={ViagemAtivaScreen}
+                  />
+                  <Stack.Screen
+                    name="ListaPresenca"
+                    component={ListaPresencaScreen}
+                  />
+                  <Stack.Screen
+                    name="HistoricoViagens"
+                    component={HistoricoViagensScreen}
+                  />
                   <Stack.Screen
                     name="Configuracoes"
                     component={ConfiguracoesScreen}

@@ -38,7 +38,8 @@ export async function migrateDatabase() {
       const colunasParaAdicionar = {
         alunos: ['telefone', 'cpf'],
         paradas: ['horario'],
-        lembretes: ['hora'],
+        // ADICIONA notificationId AQUI
+        lembretes: ['hora', 'notificationId'],
         // Adiciona duracao_volta aqui
         viagens_historico: ['tipoViagem', 'alunos_volta', 'duracao_volta'],
       };
@@ -138,7 +139,8 @@ export async function initDB(isReset = false) {
         CREATE TABLE IF NOT EXISTS veiculos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, status TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS alunos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cpf TEXT, ultimoPagamento TEXT, status TEXT, telefone TEXT, paradaId INTEGER, horario TEXT);
         CREATE TABLE IF NOT EXISTS paradas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, horario TEXT);
-        CREATE TABLE IF NOT EXISTS lembretes (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, data TEXT NOT NULL, hora TEXT);
+        /* ADICIONA notificationId AQUI */
+        CREATE TABLE IF NOT EXISTS lembretes (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, data TEXT NOT NULL, hora TEXT, notificationId TEXT);
         CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS mensalidades (valor REAL NOT NULL, dataVencimento TEXT NOT NULL);
         /* Adiciona duracao_volta na criação da tabela */
@@ -347,18 +349,21 @@ export async function getMensalidade() {
 // --- Funções Lembretes ---
 export async function getLembretes() {
     const database = await getDB();
+    // Seleciona todas as colunas, incluindo a nova notificationId
     return await database.getAllAsync("SELECT * FROM lembretes ORDER BY data, hora;");
 }
-export async function salvarLembrete(titulo, data, hora = null) { // Data DD/MM/YYYY
+// ATUALIZADO: Aceita notificationId
+export async function salvarLembrete(titulo, data, hora = null, notificationId = null) { // Data DD/MM/YYYY
     return queueOperation(async () => {
         const database = await getDB();
-        await database.runAsync(`INSERT INTO lembretes (titulo, data, hora) VALUES (?, ?, ?);`,[titulo, data, hora]);
+        await database.runAsync(`INSERT INTO lembretes (titulo, data, hora, notificationId) VALUES (?, ?, ?, ?);`,[titulo, data, hora, notificationId]);
     });
 }
-export async function editLembrete(id, titulo, data, hora = null) { // Data DD/MM/YYYY
+// ATUALIZADO: Aceita notificationId
+export async function editLembrete(id, titulo, data, hora = null, notificationId = null) { // Data DD/MM/YYYY
     return queueOperation(async () => {
         const database = await getDB();
-        await database.runAsync(`UPDATE lembretes SET titulo = ?, data = ?, hora = ? WHERE id = ?;`,[titulo, data, hora, id]);
+        await database.runAsync(`UPDATE lembretes SET titulo = ?, data = ?, hora = ?, notificationId = ? WHERE id = ?;`,[titulo, data, hora, notificationId, id]);
     });
 }
 export async function removeLembrete(id) {

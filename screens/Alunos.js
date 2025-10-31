@@ -10,7 +10,7 @@ import {
   Dimensions,
   StatusBar,
   Linking,
-  Alert,
+  Alert, // Alert está importado
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { useFocusEffect } from "@react-navigation/native";
@@ -168,12 +168,12 @@ export default function AlunosScreen({ navigation }) {
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp.")
     );
   };
-  
+
   const abrirModalDetalhes = (aluno) => {
     setAlunoSelecionado(aluno);
     setModalDetalhesVisivel(true);
   };
-  
+
   const abrirEdicao = (aluno) => {
     setModalDetalhesVisivel(false);
     const index = alunos.findIndex((a) => a.id === aluno.id);
@@ -189,32 +189,74 @@ export default function AlunosScreen({ navigation }) {
     setModalEditarVisivel(true);
   };
 
+  // --- ATUALIZADO: salvarEdicao com Alert.alert ---
   const salvarEdicao = () => {
-    if (!novoNome.trim()) return alert("Nome é obrigatório!");
-    if (novoCPF.trim() && !validarCPF(novoCPF))
-      return alert("CPF inválido! Digite 11 dígitos.");
-    editarAluno(
-      alunoEditando,
-      novoNome,
-      novoCPF,
-      novoStatus,
-      novoTelefone,
-      novoParadaId
+    if (!novoNome.trim()) {
+      Alert.alert("Erro", "Nome é obrigatório!");
+      return;
+    }
+    if (novoCPF.trim() && !validarCPF(novoCPF)) {
+      Alert.alert("Erro", "CPF inválido! Digite 11 dígitos.");
+      return;
+    }
+    
+    Alert.alert(
+      "Confirmar Alterações",
+      `Deseja salvar as alterações para ${novoNome.trim()}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Salvar",
+          style: "default",
+          onPress: () => {
+            editarAluno(
+              alunoEditando,
+              novoNome,
+              novoCPF,
+              novoStatus,
+              novoTelefone,
+              novoParadaId
+            );
+            setModalEditarVisivel(false);
+          },
+        },
+      ]
     );
-    setModalEditarVisivel(false);
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
+  // --- ATUALIZADO: handleAdicionarAluno com Alert.alert ---
   const handleAdicionarAluno = () => {
-    if (!nome.trim()) return alert("Nome é obrigatório!");
-    if (CPF.trim() && !validarCPF(CPF))
-      return alert("CPF inválido! Digite 11 dígitos.");
-    adicionarAluno(nome, CPF, status, "", telefone, paradaId);
-    setNome("");
-    setCPF("");
-    setTelefone("");
-    setParadaId(null);
-    setModalAdicionarVisivel(false);
+    if (!nome.trim()) {
+      Alert.alert("Erro", "Nome é obrigatório!");
+      return;
+    }
+    if (CPF.trim() && !validarCPF(CPF)) {
+      Alert.alert("Erro", "CPF inválido! Digite 11 dígitos.");
+      return;
+    }
+    
+    Alert.alert(
+      "Confirmar Adição",
+      `Deseja adicionar ${nome.trim()} à lista de alunos?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Adicionar",
+          style: "default",
+          onPress: () => {
+            adicionarAluno(nome, CPF, status, "", telefone, paradaId);
+            setNome("");
+            setCPF("");
+            setTelefone("");
+            setParadaId(null);
+            setModalAdicionarVisivel(false);
+          },
+        },
+      ]
+    );
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
   const abrirModalAdicionar = () => {
     setNome("");
@@ -227,15 +269,16 @@ export default function AlunosScreen({ navigation }) {
   };
 
   const handleRemoverAluno = () => {
-      if (alunoSelecionado) {
-           const index = alunos.findIndex(a => a.id === alunoSelecionado.id);
-           if (index !== -1) {
-                setModalEditarVisivel(false);
-                setModalDetalhesVisivel(false);
-                removerAluno(index);
-           }
+    if (alunoSelecionado) {
+      const index = alunos.findIndex((a) => a.id === alunoSelecionado.id);
+      if (index !== -1) {
+        setModalEditarVisivel(false);
+        setModalDetalhesVisivel(false);
+        // A função removerAluno (do contexto) já possui o Alert.alert
+        removerAluno(index);
       }
-  }
+    }
+  };
 
   return (
     <View style={styles.safeArea}>
@@ -263,7 +306,9 @@ export default function AlunosScreen({ navigation }) {
             keyExtractor={(item) => String(item.id)}
             style={styles.lista}
             ListEmptyComponent={
-              <Texto style={styles.semAlunosTexto}>Nenhum aluno cadastrado.</Texto>
+              <Texto style={styles.semAlunosTexto}>
+                Nenhum aluno cadastrado.
+              </Texto>
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -279,34 +324,36 @@ export default function AlunosScreen({ navigation }) {
                   </Texto>
                 </View>
                 {/* ******************************************************
-                  * AQUI ESTÁ A MUDANÇA SOLICITADA
-                  ******************************************************
-                */}
-// --- dentro do renderItem (card) ---
-<View style={styles.ladoDireito}>
-  <Texto
-    style={item.status === "Pago" ? styles.pago : styles.naoPago}
-  >
-    {item.status}
-  </Texto>
+                 * AQUI ESTÁ A MUDANÇA SOLICITADA
+                 ******************************************************
+                 */}
+                {/* --- dentro do renderItem (card) --- */}
+                <View style={styles.ladoDireito}>
+                  <Texto
+                    style={
+                      item.status === "Pago" ? styles.pago : styles.naoPago
+                    }
+                  >
+                    {item.status}
+                  </Texto>
 
-  {item.telefone && (
-    <TouchableOpacity
-      style={styles.botaoWhatsapp}
-      onPress={() => abrirWhatsApp(item.telefone)}
-    >
-      <Image
-        source={require("../assets/whatsapp.png")}
-        style={styles.iconeWhatsapp}
-      />
-    </TouchableOpacity>
-  )}
-</View>
+                  {item.telefone && (
+                    <TouchableOpacity
+                      style={styles.botaoWhatsapp}
+                      onPress={() => abrirWhatsApp(item.telefone)}
+                    >
+                      <Image
+                        source={require("../assets/whatsapp.png")}
+                        style={styles.iconeWhatsapp}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {/* ******************************************************
-                  * FIM DA MUDANÇA
-                  ******************************************************
-                */}
+                 * FIM DA MUDANÇA
+                 ******************************************************
+                 */}
               </TouchableOpacity>
             )}
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -482,10 +529,20 @@ export default function AlunosScreen({ navigation }) {
             </TouchableOpacity>
             {dropdownVisivel && (
               <View style={styles.dropdownOpcoes}>
-                <TouchableOpacity onPress={() => { setStatus("Pago"); setDropdownVisivel(false); }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setStatus("Pago");
+                    setDropdownVisivel(false);
+                  }}
+                >
                   <Texto style={styles.opcaoTexto}>Pago</Texto>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setStatus("Não Pago"); setDropdownVisivel(false); }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setStatus("Não Pago");
+                    setDropdownVisivel(false);
+                  }}
+                >
                   <Texto style={styles.opcaoTextoUltima}>Não Pago</Texto>
                 </TouchableOpacity>
               </View>
@@ -509,84 +566,83 @@ export default function AlunosScreen({ navigation }) {
       </Modal>
 
       <Modal visible={modalEditarVisivel} animationType="slide" transparent>
-  <View style={styles.modalFundo}>
-    <View style={styles.modalBox}>
-      <Texto style={styles.modalTitulo}>Editar Aluno</Texto>
+        <View style={styles.modalFundo}>
+          <View style={styles.modalBox}>
+            <Texto style={styles.modalTitulo}>Editar Aluno</Texto>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Novo nome"
-        placeholderTextColor="#cfcfcf"
-        value={novoNome}
-        onChangeText={setNovoNome}
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Novo nome"
+              placeholderTextColor="#cfcfcf"
+              value={novoNome}
+              onChangeText={setNovoNome}
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="CPF (opcional)"
-        placeholderTextColor="#cfcfcf"
-        value={novoCPF}
-        onChangeText={(text) => setNovoCPF(formatarCPF(text))}
-        keyboardType="numeric"
-        maxLength={14}
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="CPF (opcional)"
+              placeholderTextColor="#cfcfcf"
+              value={novoCPF}
+              onChangeText={(text) => setNovoCPF(formatarCPF(text))}
+              keyboardType="numeric"
+              maxLength={14}
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Telefone (opcional)"
-        placeholderTextColor="#cfcfcf"
-        value={novoTelefone}
-        onChangeText={(text) => setNovoTelefone(formatarTelefone(text))}
-        keyboardType="numeric"
-        maxLength={15}
-      />
+            <TextInput
+              style={styles.input}
+              placeholder="Telefone (opcional)"
+              placeholderTextColor="#cfcfcf"
+              value={novoTelefone}
+              onChangeText={(text) => setNovoTelefone(formatarTelefone(text))}
+              keyboardType="numeric"
+              maxLength={15}
+            />
 
-      <RNPickerSelect
-        onValueChange={setNovoParadaId}
-        value={novoParadaId}
-        placeholder={{
-          label: "Selecione uma parada",
-          value: null,
-        }}
-        items={paradas.map((parada) => ({
-          label: parada.nome,
-          value: parada.id,
-          key: parada.id,
-        }))}
-        style={{
-          inputIOS: styles.pickerInput,
-          inputAndroid: styles.pickerInput,
-          placeholder: { color: "#cfcfcf" },
-        }}
-        useNativeAndroidPickerStyle={false}
-      />
+            <RNPickerSelect
+              onValueChange={setNovoParadaId}
+              value={novoParadaId}
+              placeholder={{
+                label: "Selecione uma parada",
+                value: null,
+              }}
+              items={paradas.map((parada) => ({
+                label: parada.nome,
+                value: parada.id,
+                key: parada.id,
+              }))}
+              style={{
+                inputIOS: styles.pickerInput,
+                inputAndroid: styles.pickerInput,
+                placeholder: { color: "#cfcfcf" },
+              }}
+              useNativeAndroidPickerStyle={false}
+            />
 
-      <View style={styles.botoesModal}>
-        <TouchableOpacity
-          style={styles.botaoCancelar}
-          onPress={() => setModalEditarVisivel(false)}
-        >
-          <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
-        </TouchableOpacity>
+            <View style={styles.botoesModal}>
+              <TouchableOpacity
+                style={styles.botaoCancelar}
+                onPress={() => setModalEditarVisivel(false)}
+              >
+                <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.botaoModal}
-          onPress={salvarEdicao}
-        >
-          <Texto style={styles.botaoModalTexto}>Salvar</Texto>
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity
+                style={styles.botaoModal}
+                onPress={salvarEdicao}
+              >
+                <Texto style={styles.botaoModalTexto}>Salvar</Texto>
+              </TouchableOpacity>
+            </View>
 
-      <TouchableOpacity
-        style={styles.botaoExcluir}
-        onPress={handleRemoverAluno}
-      >
-        <Texto style={styles.botaoModalTexto}>Excluir Aluno</Texto>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+            <TouchableOpacity
+              style={styles.botaoExcluir}
+              onPress={handleRemoverAluno}
+            >
+              <Texto style={styles.botaoModalTexto}>Excluir Aluno</Texto>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -651,12 +707,11 @@ const styles = StyleSheet.create({
   ladoEsquerdo: {
     flex: 1,
   },
-ladoDireito: {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-},
-
+  ladoDireito: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
 
   nome: {
     color: "white",
@@ -679,12 +734,12 @@ ladoDireito: {
     fontWeight: "bold",
   },
   botaoAdicionar: {
-      backgroundColor: "#0B49C1",
-      paddingVertical: width > 768 ? 20 : 16,
-      borderRadius: 16,
-      alignItems: "center",
-      width: "100%",
-      marginTop: 20,
+    backgroundColor: "#0B49C1",
+    paddingVertical: width > 768 ? 20 : 16,
+    borderRadius: 16,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 20,
   },
   botaoTexto: {
     color: "white",
@@ -790,7 +845,7 @@ ladoDireito: {
     fontSize: 16,
     paddingVertical: 10,
   },
-   opcaoTextoUltima: {
+  opcaoTextoUltima: {
     color: "#ffffff",
     fontSize: 16,
     paddingVertical: 8,
@@ -841,8 +896,8 @@ ladoDireito: {
     paddingVertical: 8,
   },
   botaoPequenoTexto: {
-      color: "white",
-      fontWeight: "bold",
-      fontSize: 14,
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });

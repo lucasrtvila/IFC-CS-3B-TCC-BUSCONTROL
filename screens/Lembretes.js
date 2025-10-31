@@ -18,18 +18,31 @@ import { LembretesContext } from "../components/LembretesContext";
 const { width } = Dimensions.get("window");
 
 function formatarData(data) {
-    if (!data) return ''; // Adiciona verificação
-    const dia = data.getDate().toString().padStart(2, "0");
-    const mes = (data.getMonth() + 1).toString().padStart(2, "0");
-    const ano = data.getFullYear();
-    return `${dia}/${mes}/${ano}`;
+  if (!data) return ""; // Adiciona verificação
+  const dia = data.getDate().toString().padStart(2, "0");
+  const mes = (data.getMonth() + 1).toString().padStart(2, "0");
+  const ano = data.getFullYear();
+  return `${dia}/${mes}/${ano}`;
 }
 
 function formatarHora(data) {
-    if (!data) return ''; // Adiciona verificação
-    const hora = data.getHours().toString().padStart(2, "0");
-    const min = data.getMinutes().toString().padStart(2, "0");
-    return `${hora}:${min}`;
+  if (!data) return ""; // Adiciona verificação
+  const hora = data.getHours().toString().padStart(2, "0");
+  const min = data.getMinutes().toString().padStart(2, "0");
+  return `${hora}:${min}`;
+}
+
+// Função para parsear data e hora de volta para um objeto Date
+function parseDataHora(dataStr, horaStr) {
+  try {
+    const [dia, mes, ano] = dataStr.split("/");
+    const [h, m] = horaStr.split(":");
+    // Ano, Mês (0-indexado), Dia, Hora, Minuto
+    return new Date(ano, mes - 1, dia, h, m);
+  } catch (e) {
+    console.error("Erro ao parsear data/hora:", e);
+    return new Date(); // Retorna data atual como fallback
+  }
 }
 
 export default function LembretesScreen({ navigation }) {
@@ -39,69 +52,80 @@ export default function LembretesScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [editarIndex, setEditarIndex] = useState(null); // Agora armazena o ID
   const [tituloInput, setTituloInput] = useState("");
+  
+  // Estados para os PICKERS (Date Objects)
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
+
+  // Estados para os INPUTS (Strings)
   const [dataInput, setDataInput] = useState(""); // Começa vazio por padrão
   const [horaInput, setHoraInput] = useState(""); // Começa vazio por padrão
+
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [mostrarHoraPicker, setMostrarHoraPicker] = useState(false);
 
   // Abre o modal para adicionar ou editar
-  const abrirModal = (lembreteParaEditar = null) => { // Recebe o objeto lembrete
+  const abrirModal = (lembreteParaEditar = null) => {
+    // Recebe o objeto lembrete
     if (lembreteParaEditar) {
       setEditarIndex(lembreteParaEditar.id); // Armazena o ID
       setTituloInput(lembreteParaEditar.titulo);
 
       const dataStr = lembreteParaEditar.data; // DD/MM/YYYY
-      const horaStr = lembreteParaEditar.hora || formatarHora(new Date()); // Usa hora atual se não houver
-      setDataInput(dataStr);
-      setHoraInput(horaStr);
+      const horaStr = lembreteParaEditar.hora || formatarHora(new Date());
+      setDataInput(dataStr); // Define a string do input
+      setHoraInput(horaStr); // Define a string do input
 
-      // Converte DD/MM/YYYY e HH:MM para objeto Date
-      try {
-        const [dia, mes, ano] = dataStr.split("/");
-        const [h, m] = horaStr.split(":");
-        const dataObj = new Date(ano, mes - 1, dia, h, m);
-        setDataSelecionada(dataObj);
-        setHoraSelecionada(dataObj);
-      } catch (e) {
-          console.error("Erro ao converter data/hora do lembrete:", e)
-          const hoje = new Date();
-          setDataSelecionada(hoje);
-          setHoraSelecionada(hoje);
-      }
-
-    } else { // Novo lembrete
+      // Converte as strings de volta para Date para os pickers
+      const dataObj = parseDataHora(dataStr, horaStr);
+      setDataSelecionada(dataObj);
+      setHoraSelecionada(dataObj);
+    } else {
+      // Novo lembrete
       setEditarIndex(null);
       setTituloInput("");
       const hoje = new Date();
-      setDataSelecionada(hoje); // Mantém para inicializar os pickers
-      setHoraSelecionada(hoje); // Mantém para inicializar os pickers
-      // MODIFICAÇÃO AQUI: Inicia campos de texto vazios
+      // Inicializa os pickers com a data/hora atual
+      setDataSelecionada(hoje); 
+      setHoraSelecionada(hoje);
+      // Inicia campos de texto vazios
       setDataInput("");
       setHoraInput("");
-      // FIM DA MODIFICAÇÃO
     }
     setMostrarDatePicker(false);
     setMostrarHoraPicker(false);
     setModalVisible(true);
   };
 
-  const handleSalvarLembrete = () => { // Renomeado para handleSalvarLembrete
-    console.log({ tituloInput, dataInput, horaInput, editarIndex });
+  // --- ATUALIZADO: handleSalvarLembrete ---
+  const handleSalvarLembrete = () => {
     if (!tituloInput.trim() || !dataInput.trim() || !horaInput.trim()) {
       Alert.alert("Erro", "Preencha título, data e hora.");
       return;
     }
 
+    // 1. Combina a Data selecionada com a Hora selecionada
+    const triggerDate = new Date(dataSelecionada); // Começa com a data (Dia, Mês, Ano)
+    triggerDate.setHours(horaSelecionada.getHours()); // Define a hora
+    triggerDate.setMinutes(horaSelecionada.getMinutes()); // Define os minutos
+    triggerDate.setSeconds(0); // Zera os segundos
+
+    // 2. Verifica se a data/hora está no passado
+    if (triggerDate < new Date()) {
+      Alert.alert("Data Inválida", "O lembrete não pode ser agendado no passado.");
+      return;
+    }
+
+    // 3. Chama o contexto com o objeto Date combinado
     if (editarIndex !== null) {
-      editarLembrete(editarIndex, tituloInput, dataInput, horaInput); // Passa o ID
+      editarLembrete(editarIndex, tituloInput, triggerDate); // Passa o ID e o Date
     } else {
-      adicionarLembrete(tituloInput, dataInput, horaInput); //
+      adicionarLembrete(tituloInput, triggerDate); // Passa o título e o Date
     }
 
     setModalVisible(false);
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
   const abrirDatePicker = () => setMostrarDatePicker(true);
   const abrirHoraPicker = () => setMostrarHoraPicker(true);
@@ -109,16 +133,16 @@ export default function LembretesScreen({ navigation }) {
   const aoSelecionarData = (event, selectedDate) => {
     setMostrarDatePicker(Platform.OS === "ios");
     if (selectedDate) {
-      setDataSelecionada(selectedDate);
-      setDataInput(formatarData(selectedDate)); // Formata para DD/MM/YYYY
+      setDataSelecionada(selectedDate); // Atualiza o Date
+      setDataInput(formatarData(selectedDate)); // Atualiza a String do input
     }
   };
 
   const aoSelecionarHora = (event, selectedTime) => {
     setMostrarHoraPicker(Platform.OS === "ios");
     if (selectedTime) {
-      setHoraSelecionada(selectedTime);
-      setHoraInput(formatarHora(selectedTime)); // Formata para HH:MM
+      setHoraSelecionada(selectedTime); // Atualiza o Date
+      setHoraInput(formatarHora(selectedTime)); // Atualiza a String do input
     }
   };
 
@@ -136,13 +160,13 @@ export default function LembretesScreen({ navigation }) {
         </TouchableOpacity>
         <Texto style={styles.titulo}>Lembretes</Texto>
         {/* Placeholder para centralizar título */}
-        <View style={{ width: 40 }}/>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.conteudo}>
         <FlatList
           data={lembretes}
-          keyExtractor={item => item.id?.toString()} // Usa ID se disponível
+          keyExtractor={(item) => item.id?.toString()} // Usa ID se disponível
           style={styles.lista}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -201,7 +225,11 @@ export default function LembretesScreen({ navigation }) {
                 onPress={abrirDatePicker}
                 style={styles.inputData} // Estilo de input, mas clicável
               >
-                <Texto style={dataInput ? styles.dataHoraTexto : styles.placeholderTexto}>
+                <Texto
+                  style={
+                    dataInput ? styles.dataHoraTexto : styles.placeholderTexto
+                  }
+                >
                   {dataInput || "Selecionar data"}
                 </Texto>
               </TouchableOpacity>
@@ -211,6 +239,7 @@ export default function LembretesScreen({ navigation }) {
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={aoSelecionarData}
+                  minimumDate={new Date()} // Impede selecionar data passada
                 />
               )}
 
@@ -219,7 +248,11 @@ export default function LembretesScreen({ navigation }) {
                 onPress={abrirHoraPicker}
                 style={styles.inputData} // Estilo de input, mas clicável
               >
-                 <Texto style={horaInput ? styles.dataHoraTexto : styles.placeholderTexto}>
+                <Texto
+                  style={
+                    horaInput ? styles.dataHoraTexto : styles.placeholderTexto
+                  }
+                >
                   {horaInput || "Selecionar hora"}
                 </Texto>
               </TouchableOpacity>
@@ -263,7 +296,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop:30, // Aumentado para dar espaço ao header
+    paddingTop: 30, // Aumentado para dar espaço ao header
     paddingVertical: 30,
   },
   conteudo: {
@@ -383,7 +416,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
     marginTop: 10,
-    alignSelf: 'flex-start', // Garante alinhamento
+    alignSelf: "flex-start", // Garante alinhamento
   },
   input: {
     backgroundColor: "#373e4f",
@@ -395,23 +428,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ffffff",
   },
-  inputData: { // Estilo para os TocouhableOpacity de data/hora
+  inputData: {
+    // Estilo para os TocouhableOpacity de data/hora
     backgroundColor: "#373e4f",
     width: "100%",
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 15,
-    justifyContent: 'center', // Centraliza texto verticalmente
+    justifyContent: "center", // Centraliza texto verticalmente
     height: 48, // Altura similar ao TextInput
   },
-  dataHoraTexto: { // Estilo para o texto DENTRO dos TouchableOpacity QUANDO HÁ VALOR
-      fontSize: 16,
-      color: "#fff",
+  dataHoraTexto: {
+    // Estilo para o texto DENTRO dos TouchableOpacity QUANDO HÁ VALOR
+    fontSize: 16,
+    color: "#fff",
   },
-  placeholderTexto: { // Estilo para o texto DENTRO dos TouchableOpacity QUANDO ESTÁ VAZIO
-      fontSize: 16,
-      color: "#AAB1C4", // Cor do placeholder
+  placeholderTexto: {
+    // Estilo para o texto DENTRO dos TouchableOpacity QUANDO ESTÁ VAZIO
+    fontSize: 16,
+    color: "#AAB1C4", // Cor do placeholder
   },
   modalBotoes: {
     flexDirection: "row",
@@ -419,7 +455,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 10, // Espaço entre os botões
   },
-  botaoModal: { // Estilo base COMUM aos botões do modal
+  botaoModal: {
+    // Estilo base COMUM aos botões do modal
     backgroundColor: "#0B49C1", // Azul para Salvar (padrão)
     paddingVertical: 14,
     borderRadius: 10, // Menos arredondado
@@ -429,7 +466,8 @@ const styles = StyleSheet.create({
   botaoCancelar: {
     backgroundColor: "#373e4f", // Cinza para Cancelar
   },
-  botaoModalTexto: { // Texto para AMBOS os botões do modal
+  botaoModalTexto: {
+    // Texto para AMBOS os botões do modal
     color: "#fff",
     fontSize: 16, // Tamanho padrão
     fontWeight: "bold",

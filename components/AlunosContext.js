@@ -54,8 +54,8 @@ const getMesAnoDeFaturamentoAtual = (diaVencimento) => {
 };
 
 export function AlunosProvider({ children }) {
-  const [alunos, setAlunos] = useState([]);
-  const [alunosComStatus, setAlunosComStatus] = useState([]);
+  const [alunos, setAlunos] = useState([]); // Lista de alunos (base, sem status)
+  const [alunosComStatus, setAlunosComStatus] = useState([]); // Lista para exibição (com status do mês)
   const [paradas, setParadas] = useState([]);
   const [mesAnoVisivel, setMesAnoVisivel] = useState(null);
   const [diaVencimentoAtual, setDiaVencimentoAtual] = useState(20);
@@ -72,7 +72,7 @@ export function AlunosProvider({ children }) {
     if (mesAnoVisivel) {
         carregarStatusAlunosDoMes(mesAnoVisivel);
     }
-  }, [mesAnoVisivel, alunos]);
+  }, [mesAnoVisivel, alunos]); // Depende de 'alunos' (lista base) para recalcular status
 
   const carregarDadosIniciais = async () => {
     try {
@@ -102,7 +102,7 @@ export function AlunosProvider({ children }) {
       setMesAnoVisivel(mesAnoFaturamento);
 
       await carregarParadas();
-      await carregarAlunosBase();
+      await carregarAlunosBase(); // Carrega a lista base de alunos
 
     } catch (error) {
       console.log("❌ Erro na inicialização completa:", error);
@@ -112,7 +112,7 @@ export function AlunosProvider({ children }) {
    const carregarAlunosBase = async () => {
     try {
         const data = await getAlunos();
-        setAlunos(data);
+        setAlunos(data); // Atualiza a lista base 'alunos'
     } catch (error) {
         console.log("❌ Erro ao carregar alunos base:", error);
     }
@@ -121,8 +121,9 @@ export function AlunosProvider({ children }) {
     const carregarStatusAlunosDoMes = async (mesAno) => {
         if (!mesAno) return;
         try {
+            // Busca os alunos já com o status para o mês específico
             const data = await getAlunosComStatusParaMes(mesAno);
-            setAlunosComStatus(data);
+            setAlunosComStatus(data); // Atualiza a lista de exibição
         } catch (error) {
             console.log(`❌ Erro ao carregar status dos alunos para ${mesAno}:`, error);
         }
@@ -138,14 +139,29 @@ export function AlunosProvider({ children }) {
     }
   };
 
+  // --- FUNÇÃO ATUALIZADA ---
   const adicionarAlunoContext = async (nome, cpf, status, ultimoPagamento, telefone, paradaId) => {
     if (!nome.trim()) {
        Alert.alert("Erro", "O nome do aluno é obrigatório.");
       return;
     }
+    
+    // --- Validação de CPF Duplicado ---
+    const cpfLimpo = cpf.replace(/\D/g, ""); // Limpa o CPF para verificação
+    if (cpfLimpo.length > 0) { // Só verifica se um CPF foi digitado
+        // Usa a lista 'alunos' (base) para verificar
+        const cpfExistente = alunos.find(aluno => aluno.cpf && aluno.cpf.replace(/\D/g, "") === cpfLimpo);
+        if (cpfExistente) {
+            Alert.alert("CPF Duplicado", "Este CPF já está cadastrado em outro aluno.");
+            return; // Para a execução
+        }
+    }
+    // --- Fim da Validação ---
+
     try {
+      // Passa o CPF formatado (ou "") para o banco
       await addAluno(nome.trim(), cpf || "", status, ultimoPagamento || "", telefone || "", paradaId);
-      await carregarAlunosBase();
+      await carregarAlunosBase(); // Recarrega a lista base
        Alert.alert("Sucesso", "Aluno adicionado!");
 
     } catch (e) {
@@ -153,10 +169,12 @@ export function AlunosProvider({ children }) {
        Alert.alert("Erro no Cadastro", "Não foi possível adicionar o aluno. Verifique os logs.");
     }
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
 
+  // --- FUNÇÃO ATUALIZADA ---
   const editarAlunoContext = async (index, novoNome, novoCPF, novoStatus, novoTelefone, novoParadaId) => {
-    const alunoParaEditar = alunosComStatus[index];
+    const alunoParaEditar = alunosComStatus[index]; // Pega o aluno da lista de exibição
      if (!alunoParaEditar) {
          console.error("Aluno não encontrado para edição no índice:", index);
          Alert.alert("Erro", "Aluno não encontrado para edição.");
@@ -167,22 +185,46 @@ export function AlunosProvider({ children }) {
       return;
     }
 
+    // --- Validação de CPF Duplicado (Edição) ---
+    const cpfLimpo = novoCPF.replace(/\D/g, "");
+    if (cpfLimpo.length > 0) {
+        // Verifica na lista base 'alunos'
+        const cpfExistente = alunos.find(aluno =>
+            aluno.cpf &&
+            aluno.cpf.replace(/\D/g, "") === cpfLimpo &&
+            aluno.id !== alunoParaEditar.id // Garante que não é o CPF do próprio aluno
+        );
+        if (cpfExistente) {
+            Alert.alert("CPF Duplicado", "Este CPF já está cadastrado em outro aluno.");
+            return; // Para a execução
+        }
+    }
+    // --- Fim da Validação ---
+
     try {
       const paradaSelecionada = paradas.find(p => p.id === novoParadaId);
       const horarioParada = paradaSelecionada ? paradaSelecionada.horario : null;
+
+      // Busca o 'ultimoPagamento' da lista base, pois 'alunosComStatus' não o possui
+      const alunoBase = alunos.find(a => a.id === alunoParaEditar.id);
+      const ultimoPagamento = alunoBase ? alunoBase.ultimoPagamento : "";
 
       await updateAluno(
         alunoParaEditar.id,
         novoNome.trim(),
         novoCPF || "",
-        alunos.find(a => a.id === alunoParaEditar.id)?.ultimoPagamento || "",
+        ultimoPagamento, // Usa o ultimoPagamento da lista base
         novoTelefone || "",
         novoParadaId,
         horarioParada
       );
 
+      // Atualiza o status de pagamento para o mês ATUAL
       await registrarOuAtualizarStatusPagamento(alunoParaEditar.id, mesAnoVisivel, novoStatus);
-      await carregarAlunosBase();
+      
+      await carregarAlunosBase(); // Recarrega a lista base
+      // O useEffect [mesAnoVisivel, alunos] cuidará de recarregar a 'alunosComStatus'
+      
       Alert.alert("Sucesso", "Aluno atualizado!");
 
     } catch (e) {
@@ -190,11 +232,12 @@ export function AlunosProvider({ children }) {
       Alert.alert("Erro", "Não foi possível atualizar o aluno.");
     }
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
   const updateStatusAlunoContext = async (idAluno, novoStatus, mesAno = mesAnoVisivel) => {
       try {
           await registrarOuAtualizarStatusPagamento(idAluno, mesAno, novoStatus);
-          await carregarStatusAlunosDoMes(mesAnoVisivel);
+          await carregarStatusAlunosDoMes(mesAnoVisivel); // Recarrega a lista de exibição
       } catch (error) {
           console.error("Erro ao atualizar status do aluno no contexto:", error);
           Alert.alert("Erro", "Não foi possível atualizar o status de pagamento.");
@@ -203,7 +246,7 @@ export function AlunosProvider({ children }) {
   };
 
   const removerAlunoContext = (index) => {
-     const alunoParaRemover = alunosComStatus[index];
+     const alunoParaRemover = alunosComStatus[index]; // Pega da lista de exibição
      if (!alunoParaRemover) {
         console.error("Aluno não encontrado para remoção no índice:", index);
         Alert.alert("Erro", "Aluno não encontrado para remoção.");
@@ -218,7 +261,8 @@ export function AlunosProvider({ children }) {
         onPress: async () => {
           try {
             await deleteAluno(alunoParaRemover.id);
-            await carregarAlunosBase();
+            await carregarAlunosBase(); // Recarrega a lista base
+            // O useEffect cuidará de recarregar a 'alunosComStatus'
           } catch (e) {
             console.log("Erro ao remover aluno (Context):", e);
             Alert.alert("Erro", "Não foi possível remover o aluno.");
@@ -301,8 +345,8 @@ export function AlunosProvider({ children }) {
   return (
     <AlunosContext.Provider
       value={{
-          alunos: alunosComStatus,
-          alunosBase: alunos,
+          alunos: alunosComStatus, // Lista para exibição (com status do mês)
+          alunosBase: alunos, // Lista base (sem status)
           adicionarAluno: adicionarAlunoContext,
           editarAluno: editarAlunoContext,
           removerAluno: removerAlunoContext,

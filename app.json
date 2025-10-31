@@ -28,7 +28,8 @@
     "owner": "capibaracocosine",
     "plugins": [
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ]
   }
 }
