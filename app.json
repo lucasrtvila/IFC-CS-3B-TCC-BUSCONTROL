@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "trabalho_01_ddm",
+    "name": "BusControl",
     "slug": "snack-f1f93eb7-97f9-45c2-b31f-7489eadc72ad",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/onibus.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +16,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/onibus.png",
+        "backgroundColor": "#0B49C1"
       },
       "package": "com.capibaracocosine.snackf1f93eb797f945c2b31f7489eadc72ad"
     },

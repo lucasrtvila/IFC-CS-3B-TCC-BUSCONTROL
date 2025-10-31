@@ -29,11 +29,62 @@ import { ParadasProvider } from "./components/ParadasContext";
 import { ViagemProvider } from "./components/ViagemContext";
 
 // Banco de Dados
-import { initDB, migrateDatabase } from "./database/database";
-import { getUsuario } from "./database/database";
-// import { verificarEVAtualizarStatusMensalidade } from "./database/database"; // Removido
+import {
+  initDB,
+  migrateDatabase,
+  getUsuario,
+  // --- ATUALIZADO: Importações para Regra 3 ---
+  getMensalidade,
+  salvarMensalidade,
+  calcularProximoVencimento,
+  // --- FIM DA ATUALIZAÇÃO ---
+} from "./database/database";
 
 const Stack = createStackNavigator();
+
+// --- ATUALIZADO (1/3): Função helper copiada do AlunosContext ---
+function parseDataISO(dataString) {
+    if (!dataString || typeof dataString !== 'string') return null;
+    const parts = dataString.split('-');
+    if (parts.length === 3) {
+      // Cria a data em UTC
+      return new Date(Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
+    }
+    return null;
+}
+
+// --- ATUALIZADO (2/3): Lógica da Regra 3 (Renovação Automática) ---
+async function verificarEAtualizarVencimento() {
+  console.log("Verificando data de vencimento...");
+  try {
+    const config = await getMensalidade();
+    if (config && config.dataVencimento) {
+      const dataVencObj = parseDataISO(config.dataVencimento);
+      const hoje = new Date();
+      
+      // Ajusta 'hoje' para o início do dia (meia-noite) para comparação
+      hoje.setHours(0, 0, 0, 0);
+
+      // Se a data de vencimento armazenada (em UTC) for anterior a hoje
+      if (dataVencObj && dataVencObj < hoje) {
+        console.log(`Data de vencimento antiga (${config.dataVencimento}) ultrapassada.`);
+        // Calcula a próxima data de vencimento
+        const proximoVencimentoISO = calcularProximoVencimento(config.dataVencimento);
+        // Salva a nova data no banco
+        await salvarMensalidade(config.valor, proximoVencimentoISO);
+        console.log(`✅ Data de vencimento atualizada para: ${proximoVencimentoISO}`);
+      } else {
+        console.log("Data de vencimento ainda válida.");
+      }
+    } else {
+        console.log("Nenhuma configuração de mensalidade encontrada para verificar.");
+    }
+  } catch (error) {
+    console.error("Erro ao verificar/atualizar data de vencimento:", error);
+  }
+}
+// --- FIM DA ATUALIZAÇÃO ---
+
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -44,7 +95,9 @@ export default function App() {
       try {
         await initDB();
         await migrateDatabase();
-        // await verificarEVAtualizarStatusMensalidade(); // Removido
+        // --- ATUALIZADO (3/3): Chama a verificação de vencimento ---
+        await verificarEAtualizarVencimento();
+        // --- FIM DA ATUALIZAÇÃO ---
         const usuario = await getUsuario();
         setInitialRoute(usuario ? "Inicial" : "Cadastro");
         setDbReady(true);

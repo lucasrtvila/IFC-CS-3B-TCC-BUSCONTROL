@@ -272,6 +272,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: "center",
      fontWeight: "bold",
+     fontSize: 22,
   },
   listContainer: {
     paddingBottom: 20,

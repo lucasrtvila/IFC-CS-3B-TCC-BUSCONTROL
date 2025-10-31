@@ -111,7 +111,7 @@ export function AlunosProvider({ children }) {
 
    const carregarAlunosBase = async () => {
     try {
-        const data = await getAlunos();
+        const data = await getAlunos(); // getAlunos agora só retorna alunos ativos
         setAlunos(data); // Atualiza a lista base 'alunos'
     } catch (error) {
         console.log("❌ Erro ao carregar alunos base:", error);
@@ -121,7 +121,7 @@ export function AlunosProvider({ children }) {
     const carregarStatusAlunosDoMes = async (mesAno) => {
         if (!mesAno) return;
         try {
-            // Busca os alunos já com o status para o mês específico
+            // Busca os alunos já com o status para o mês específico (AGORA COM A NOVA LÓGICA)
             const data = await getAlunosComStatusParaMes(mesAno);
             setAlunosComStatus(data); // Atualiza a lista de exibição
         } catch (error) {
@@ -146,21 +146,30 @@ export function AlunosProvider({ children }) {
       return;
     }
     
-    // --- Validação de CPF Duplicado ---
-    const cpfLimpo = cpf.replace(/\D/g, ""); // Limpa o CPF para verificação
-    if (cpfLimpo.length > 0) { // Só verifica se um CPF foi digitado
-        // Usa a lista 'alunos' (base) para verificar
+    const cpfLimpo = cpf.replace(/\D/g, ""); 
+    if (cpfLimpo.length > 0) { 
         const cpfExistente = alunos.find(aluno => aluno.cpf && aluno.cpf.replace(/\D/g, "") === cpfLimpo);
         if (cpfExistente) {
             Alert.alert("CPF Duplicado", "Este CPF já está cadastrado em outro aluno.");
-            return; // Para a execução
+            return; 
         }
     }
-    // --- Fim da Validação ---
-
+   
     try {
-      // Passa o CPF formatado (ou "") para o banco
-      await addAluno(nome.trim(), cpf || "", status, ultimoPagamento || "", telefone || "", paradaId);
+      // --- ATUALIZADO: Adiciona data de cadastro ---
+      const dataCadastroISO = new Date().toISOString().split('T')[0]; // Formato 'YYYY-MM-DD'
+      
+      await addAluno(
+          nome.trim(), 
+          cpf || "", 
+          status, 
+          ultimoPagamento || "", 
+          telefone || "", 
+          paradaId, 
+          dataCadastroISO // Passa a data de cadastro
+      );
+      // --- FIM DA ATUALIZAÇÃO ---
+      
       await carregarAlunosBase(); // Recarrega a lista base
        Alert.alert("Sucesso", "Aluno adicionado!");
 
@@ -172,9 +181,8 @@ export function AlunosProvider({ children }) {
   // --- FIM DA ATUALIZAÇÃO ---
 
 
-  // --- FUNÇÃO ATUALIZADA ---
   const editarAlunoContext = async (index, novoNome, novoCPF, novoStatus, novoTelefone, novoParadaId) => {
-    const alunoParaEditar = alunosComStatus[index]; // Pega o aluno da lista de exibição
+    const alunoParaEditar = alunosComStatus[index]; 
      if (!alunoParaEditar) {
          console.error("Aluno não encontrado para edição no índice:", index);
          Alert.alert("Erro", "Aluno não encontrado para edição.");
@@ -185,45 +193,43 @@ export function AlunosProvider({ children }) {
       return;
     }
 
-    // --- Validação de CPF Duplicado (Edição) ---
     const cpfLimpo = novoCPF.replace(/\D/g, "");
     if (cpfLimpo.length > 0) {
-        // Verifica na lista base 'alunos'
         const cpfExistente = alunos.find(aluno =>
             aluno.cpf &&
             aluno.cpf.replace(/\D/g, "") === cpfLimpo &&
-            aluno.id !== alunoParaEditar.id // Garante que não é o CPF do próprio aluno
+            aluno.id !== alunoParaEditar.id 
         );
         if (cpfExistente) {
             Alert.alert("CPF Duplicado", "Este CPF já está cadastrado em outro aluno.");
-            return; // Para a execução
+            return; 
         }
     }
-    // --- Fim da Validação ---
 
     try {
       const paradaSelecionada = paradas.find(p => p.id === novoParadaId);
       const horarioParada = paradaSelecionada ? paradaSelecionada.horario : null;
 
-      // Busca o 'ultimoPagamento' da lista base, pois 'alunosComStatus' não o possui
       const alunoBase = alunos.find(a => a.id === alunoParaEditar.id);
-      const ultimoPagamento = alunoBase ? alunoBase.ultimoPagamento : "";
+      // Se o alunoBase não for encontrado (ex: aluno inativo sendo editado em mês passado), 
+      // precisamos buscar o ultimoPagamento de outra forma, mas para a lógica atual, 
+      // só alunos ativos (presentes em 'alunos') devem ser editáveis.
+      const ultimoPagamento = (alunoBase ? alunoBase.ultimoPagamento : "") || "";
+
 
       await updateAluno(
         alunoParaEditar.id,
         novoNome.trim(),
         novoCPF || "",
-        ultimoPagamento, // Usa o ultimoPagamento da lista base
+        ultimoPagamento, 
         novoTelefone || "",
         novoParadaId,
         horarioParada
       );
 
-      // Atualiza o status de pagamento para o mês ATUAL
       await registrarOuAtualizarStatusPagamento(alunoParaEditar.id, mesAnoVisivel, novoStatus);
       
-      await carregarAlunosBase(); // Recarrega a lista base
-      // O useEffect [mesAnoVisivel, alunos] cuidará de recarregar a 'alunosComStatus'
+      await carregarAlunosBase(); 
       
       Alert.alert("Sucesso", "Aluno atualizado!");
 
@@ -232,7 +238,6 @@ export function AlunosProvider({ children }) {
       Alert.alert("Erro", "Não foi possível atualizar o aluno.");
     }
   };
-  // --- FIM DA ATUALIZAÇÃO ---
 
   const updateStatusAlunoContext = async (idAluno, novoStatus, mesAno = mesAnoVisivel) => {
       try {
@@ -245,24 +250,25 @@ export function AlunosProvider({ children }) {
       }
   };
 
+  // Esta função agora executa um "soft delete" (statusAtivo = 0)
   const removerAlunoContext = (index) => {
-     const alunoParaRemover = alunosComStatus[index]; // Pega da lista de exibição
+     const alunoParaRemover = alunosComStatus[index]; 
      if (!alunoParaRemover) {
         console.error("Aluno não encontrado para remoção no índice:", index);
         Alert.alert("Erro", "Aluno não encontrado para remoção.");
         return;
      }
 
-    Alert.alert("Confirmar remoção", "Deseja realmente remover este aluno?", [
+    Alert.alert("Confirmar remoção", "Deseja realmente remover este aluno? O histórico de pagamentos será mantido.", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Remover",
          style: "destructive",
         onPress: async () => {
           try {
-            await deleteAluno(alunoParaRemover.id);
-            await carregarAlunosBase(); // Recarrega a lista base
-            // O useEffect cuidará de recarregar a 'alunosComStatus'
+            await deleteAluno(alunoParaRemover.id); // Agora faz UPDATE statusAtivo = 0
+            await carregarAlunosBase(); // Recarrega a lista base (que só pega ativos)
+            // O useEffect [mesAnoVisivel, alunos] recarregará 'alunosComStatus'
           } catch (e) {
             console.log("Erro ao remover aluno (Context):", e);
             Alert.alert("Erro", "Não foi possível remover o aluno.");
@@ -302,51 +308,46 @@ export function AlunosProvider({ children }) {
         return proximoCicloVisivel > cicloFaturamentoAtual;
     };
 
-    // --- NOVA FUNÇÃO PARA ATUALIZAR MENSALIDADE ---
     const atualizarConfigMensalidade = async (novoValor, novaDataVencimentoObj) => {
         const valorFloat = parseFloat(novoValor);
-        const dataFormatadaISO = formatarDataISO(novaDataVencimentoObj); // Converte Date para YYYY-MM-DD
+        const dataFormatadaISO = formatarDataISO(novaDataVencimentoObj); 
 
         if (isNaN(valorFloat) || valorFloat <= 0) {
             Alert.alert("Valor Inválido", "Insira um valor numérico positivo.");
-            return false; // Indica falha
+            return false; 
         }
         if (!dataFormatadaISO) {
              Alert.alert("Data Inválida", "Selecione uma data de vencimento válida.");
-            return false; // Indica falha
+            return false; 
         }
 
         try {
-            await salvarMensalidade(valorFloat, dataFormatadaISO); // Salva no DB
-            // Atualiza os estados no contexto
+            await salvarMensalidade(valorFloat, dataFormatadaISO); 
             setValorMensalidade(valorFloat.toString());
             setDataVencimento(novaDataVencimentoObj);
-            setDiaVencimentoAtual(novaDataVencimentoObj.getUTCDate()); // Atualiza o dia de vencimento usado nos cálculos
-            // Recalcula o mês visível atual caso o dia de vencimento tenha mudado o ciclo
+            setDiaVencimentoAtual(novaDataVencimentoObj.getUTCDate()); 
             const novoMesAnoFaturamento = getMesAnoDeFaturamentoAtual(novaDataVencimentoObj.getUTCDate());
             if (novoMesAnoFaturamento !== mesAnoVisivel) {
                 setMesAnoVisivel(novoMesAnoFaturamento);
-                // O useEffect [mesAnoVisivel] cuidará de recarregar os status
             } else {
-                 await carregarStatusAlunosDoMes(mesAnoVisivel); // Recarrega status se o mês não mudou
+                 await carregarStatusAlunosDoMes(mesAnoVisivel); 
             }
 
             console.log("Configuração de mensalidade atualizada no contexto e DB.");
-            return true; // Indica sucesso
+            return true; 
         } catch (error) {
             console.error("Erro ao atualizar configuração de mensalidade (Context):", error);
             Alert.alert("Erro", "Não foi possível salvar as configurações.");
-            return false; // Indica falha
+            return false; 
         }
     };
-    // --- FIM NOVA FUNÇÃO ---
 
 
   return (
     <AlunosContext.Provider
       value={{
-          alunos: alunosComStatus, // Lista para exibição (com status do mês)
-          alunosBase: alunos, // Lista base (sem status)
+          alunos: alunosComStatus, 
+          alunosBase: alunos, 
           adicionarAluno: adicionarAlunoContext,
           editarAluno: editarAlunoContext,
           removerAluno: removerAlunoContext,
@@ -359,11 +360,9 @@ export function AlunosProvider({ children }) {
           proximoMes,
           isProximoMesFuturo,
           carregarAlunosBase,
-          // --- EXPORTAR ESTADOS E FUNÇÃO DA MENSALIDADE ---
           valorMensalidade,
           dataVencimento,
           atualizarConfigMensalidade,
-          // --- FIM EXPORTAR ---
       }}
     >
       {children}

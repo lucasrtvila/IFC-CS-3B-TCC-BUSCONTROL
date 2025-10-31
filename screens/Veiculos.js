@@ -8,13 +8,16 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-
+  Dimensions, // <-- ADICIONADO
 } from "react-native";
 import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
 
+const { width } = Dimensions.get("window"); // <-- ADICIONADO
+const isTablet = width > 768; // <-- ADICIONADO
+
 export default function VeiculosScreen({ navigation }) {
-  const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } = 
+  const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } =
     useContext(VeiculosContext);
 
   const [nome, setNome] = useState(""); // estado para o nome do veículo
@@ -25,13 +28,14 @@ export default function VeiculosScreen({ navigation }) {
   const [modalAdicionarVisivel, setModalAdicionarVisivel] = useState(false);
 
   // Modal para editar veículo
-  const [modalEditarVisivel, setModalEditarVisivel] = useState(false); // estado para controlar a visibilidade do modal de edição 
+  const [modalEditarVisivel, setModalEditarVisivel] = useState(false); // estado para controlar a visibilidade do modal de edição
   const [veiculoEditando, setVeiculoEditando] = useState(null); // estado para o veículo que está sendo editado
   const [novoNome, setNovoNome] = useState(""); // estado para o novo nome do veículo
   const [novoStatus, setNovoStatus] = useState("Ativo"); // estado para o novo status do veículo, ativo por padrão
   const [editDropdownVisivel, setEditDropdownVisivel] = useState(false); // estado para o dropdown de edição
 
-  const abrirEdicao = (index) => { //funcao pra abrir o modal de edicao do veiculo
+  const abrirEdicao = (index) => {
+    //funcao pra abrir o modal de edicao do veiculo
     const veiculo = veiculos[index];
     setVeiculoEditando(index);
     setNovoNome(veiculo.nome);
@@ -39,13 +43,15 @@ export default function VeiculosScreen({ navigation }) {
     setModalEditarVisivel(true);
   };
 
-  const salvarEdicao = () => {  //funcao pra salvar a edicao do veiculo
+  const salvarEdicao = () => {
+    //funcao pra salvar a edicao do veiculo
     if (!novoNome.trim()) return;
     editarVeiculo(veiculoEditando, novoNome, novoStatus);
     setModalEditarVisivel(false);
   };
 
-  const handleAdicionarVeiculo = () => { //funcao pra adicionar veiculo
+  const handleAdicionarVeiculo = () => {
+    //funcao pra adicionar veiculo
     if (!nome.trim()) return;
     adicionarVeiculo(nome, status);
     setNome("");
@@ -53,7 +59,8 @@ export default function VeiculosScreen({ navigation }) {
     setModalAdicionarVisivel(false);
   };
 
-  const abrirModalAdicionar = () => { //funcao pra abrir o modal de adicionar veiculo
+  const abrirModalAdicionar = () => {
+    //funcao pra abrir o modal de adicionar veiculo
     setNome("");
     setStatus("Ativo");
     setDropdownVisivel(false);
@@ -97,22 +104,22 @@ export default function VeiculosScreen({ navigation }) {
                   {item.nome}
                 </Texto>
                 <Texto style={styles.veiculoStatus}>{item.status}</Texto>
-                </TouchableOpacity>
+              </TouchableOpacity>
 
-                <View style={styles.excluirContainer}>
+              <View style={styles.excluirContainer}>
                 <TouchableOpacity
                   style={styles.botaoRemover}
-                  onPress={() =>removerVeiculo(index)}>
-
-                 <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
-              </TouchableOpacity>
+                  onPress={() => removerVeiculo(index)}
+                >
+                  <Texto style={styles.botaoAcaoTexto}>Excluir</Texto>
+                </TouchableOpacity>
               </View>
             </View>
           )}
-          />
+        />
 
         {/* Modal para adicionar veículo */}
-        <Modal 
+        <Modal
           visible={modalAdicionarVisivel}
           animationType="slide"
           transparent
@@ -253,8 +260,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingHorizontal: isTablet ? 40 : 20, // <-- MODIFICADO
+    paddingVertical: isTablet ? 50 : 30, // <-- MODIFICADO
   },
 
   conteudo: {
@@ -282,7 +289,7 @@ const styles = StyleSheet.create({
 
   titulo: {
     color: "#FFF",
-    fontSize: 28,
+    fontSize: isTablet ? 32 : 28, // <-- MODIFICADO
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -319,8 +326,8 @@ const styles = StyleSheet.create({
 
   veiculoItem: {
     backgroundColor: "#1c2337",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: isTablet ? 18 : 14, // <-- MODIFICADO
+    paddingHorizontal: isTablet ? 30 : 24, // <-- MODIFICADO
     borderRadius: 16,
     marginTop: 20,
     flexDirection: "row",
@@ -333,22 +340,22 @@ const styles = StyleSheet.create({
 
   veiculoTitulo: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: isTablet ? 22 : 20, // <-- MODIFICADO
     fontWeight: "bold",
     marginBottom: 5,
   },
 
   veiculoStatus: {
     color: "#cfcfcf",
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14, // <-- MODIFICADO
   },
 
   excluirContainer: {
-    flexDirection:"row",
+    flexDirection: "row",
     gap: 10,
-    marginLeft:20
+    marginLeft: 20,
   },
-  
+
   botaoRemover: {
     // Mantém como está ou ajusta se necessário
     paddingHorizontal: 15, // Adiciona padding horizontal
@@ -359,20 +366,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#c41628ff",
   },
   botaoAcaoTexto: {
-    fontSize: 14, // Reduzido
+    fontSize: isTablet ? 16 : 14, // <-- MODIFICADO
     fontWeight: "bold",
     color: "#fff", // Branco para melhor contraste
   },
-
 
   input: {
     backgroundColor: "#373e4f",
     width: "100%",
     borderRadius: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingHorizontal: isTablet ? 20 : 15, // <-- MODIFICADO
+    paddingVertical: isTablet ? 16 : 12, // <-- MODIFICADO
     marginBottom: 15,
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
     color: "#ffffff",
   },
 
@@ -386,7 +392,7 @@ const styles = StyleSheet.create({
 
   dropdownTexto: {
     color: "#ffffff",
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
   },
 
   dropdownOpcoes: {
@@ -399,8 +405,8 @@ const styles = StyleSheet.create({
 
   opcaoTexto: {
     color: "#ffffff",
-    fontSize: 16,
-    paddingVertical: 8,
+    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
+    paddingVertical: 10, // <-- MODIFICADO
     paddingHorizontal: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#6666",
@@ -408,14 +414,14 @@ const styles = StyleSheet.create({
 
   opcaoTextoUltima: {
     color: "#ffffff",
-    fontSize: 16,
-    paddingVertical: 8,
+    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
+    paddingVertical: 10, // <-- MODIFICADO
     paddingHorizontal: 5,
   },
 
   botao: {
     backgroundColor: "#0B49C1",
-    paddingVertical: 14,
+    paddingVertical: isTablet ? 18 : 14, // <-- MODIFICADO
     paddingHorizontal: 24,
     borderRadius: 16,
     alignItems: "center",
@@ -425,7 +431,7 @@ const styles = StyleSheet.create({
 
   botaoTexto: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: isTablet ? 24 : 22, // <-- MODIFICADO
     fontWeight: "bold",
   },
 
@@ -438,15 +444,16 @@ const styles = StyleSheet.create({
 
   modalBox: {
     backgroundColor: "#1c2337",
-    padding: 20,
+    padding: isTablet ? 30 : 20, // <-- MODIFICADO
     borderRadius: 16,
-    width: "90%",
+    width: isTablet ? "60%" : "90%", // <-- MODIFICADO
+    maxWidth: 600, // <-- ADICIONADO
   },
 
   modalTitulo: {
     color: "#fff",
-    fontSize: 20,
-    marginBottom: 15,
+    fontSize: isTablet ? 24 : 20, // <-- MODIFICADO
+    marginBottom: 20, // <-- MODIFICADO
     textAlign: "center",
     fontWeight: "bold",
   },
@@ -478,7 +485,7 @@ const styles = StyleSheet.create({
 
   botaoModalTexto: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
     fontWeight: "bold",
   },
 });

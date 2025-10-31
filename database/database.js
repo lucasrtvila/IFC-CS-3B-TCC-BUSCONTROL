@@ -36,7 +36,8 @@ export async function migrateDatabase() {
       console.log("🔄 Executando migrações...");
 
       const colunasParaAdicionar = {
-        alunos: ['telefone', 'cpf'],
+        // --- ATUALIZADO (1/3): Adicionado dataCadastro e statusAtivo ---
+        alunos: ['telefone', 'cpf', 'dataCadastro', 'statusAtivo'],
         paradas: ['horario'],
         // ADICIONA notificationId AQUI
         lembretes: ['hora', 'notificationId'],
@@ -48,12 +49,25 @@ export async function migrateDatabase() {
         for (const coluna of colunasParaAdicionar[tabela]) {
           const existe = await checkIfColumnExists(tabela, coluna);
           if (!existe) {
-            // Usa TEXT para duracao_volta para simplicidade (formato MM:SS)
-            await database.execAsync(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} TEXT;`);
+            // Define o tipo de coluna (TEXT para dataCadastro, INTEGER para statusAtivo)
+            let columnType = "TEXT";
+            if (coluna === 'statusAtivo') {
+              columnType = "INTEGER DEFAULT 1"; // Ativo por padrão
+            }
+            
+            await database.execAsync(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${columnType};`);
             console.log(`✅ Coluna '${coluna}' adicionada à tabela '${tabela}'.`);
           }
         }
       }
+
+       // --- ATUALIZADO (2/3): Define data de cadastro para alunos existentes ---
+       // Define a data de cadastro como a data atual para alunos que não a possuem
+       await database.execAsync(`UPDATE alunos SET dataCadastro = strftime('%Y-%m-%d', 'now') WHERE dataCadastro IS NULL`);
+       // Garante que alunos existentes sejam definidos como ativos
+       await database.execAsync(`UPDATE alunos SET statusAtivo = 1 WHERE statusAtivo IS NULL`);
+       // --- FIM DA ATUALIZAÇÃO ---
+
 
        // Garante que a coluna duracao_volta exista (caso a migração anterior falhe ou seja antiga)
       const duracaoVoltaExists = await checkIfColumnExists('viagens_historico', 'duracao_volta');
@@ -122,7 +136,8 @@ async function initHistoricoPagamentosTable() {
             mes_ano TEXT NOT NULL, -- Formato 'YYYY-MM'
             status TEXT NOT NULL, -- 'Pago' ou 'Não Pago'
             data_modificacao TEXT, -- Data ISO de quando foi marcado como Pago/Não Pago
-            FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
+            /* --- ATUALIZADO (3/3): Removido ON DELETE CASCADE --- */
+            FOREIGN KEY (aluno_id) REFERENCES alunos(id)
         );
     `);
     await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_pagamento_aluno_mes ON historico_pagamentos (aluno_id, mes_ano);`);
@@ -137,7 +152,19 @@ export async function initDB(isReset = false) {
       const database = await getDB();
       await database.execAsync(`
         CREATE TABLE IF NOT EXISTS veiculos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, status TEXT NOT NULL);
-        CREATE TABLE IF NOT EXISTS alunos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cpf TEXT, ultimoPagamento TEXT, status TEXT, telefone TEXT, paradaId INTEGER, horario TEXT);
+        /* --- ATUALIZADO: Adicionado dataCadastro e statusAtivo --- */
+        CREATE TABLE IF NOT EXISTS alunos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            nome TEXT NOT NULL, 
+            cpf TEXT, 
+            ultimoPagamento TEXT, 
+            status TEXT, 
+            telefone TEXT, 
+            paradaId INTEGER, 
+            horario TEXT,
+            dataCadastro TEXT,
+            statusAtivo INTEGER DEFAULT 1
+        );
         CREATE TABLE IF NOT EXISTS paradas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, horario TEXT);
         /* ADICIONA notificationId AQUI */
         CREATE TABLE IF NOT EXISTS lembretes (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, data TEXT NOT NULL, hora TEXT, notificationId TEXT);
@@ -231,31 +258,31 @@ export async function deleteVeiculo(id) {
 // --- Funções Alunos ---
 export async function getAlunos() {
   const database = await getDB();
-  // Busca todas as colunas relevantes da tabela alunos
-  return await database.getAllAsync("SELECT id, nome, cpf, ultimoPagamento, telefone, paradaId, horario FROM alunos");
+  // --- ATUALIZADO: Busca todas as colunas, incluindo as novas ---
+  return await database.getAllAsync("SELECT id, nome, cpf, ultimoPagamento, telefone, paradaId, horario, dataCadastro, statusAtivo, status FROM alunos WHERE statusAtivo = 1");
 }
 
-// --- addAluno CORRIGIDO (Versão Simplificada) ---
-// Remove a lógica de registrar pagamento inicial, voltando ao comportamento antigo.
-export async function addAluno(nome, cpf, status, ultimoPagamento = "", telefone = "", paradaId = null) {
+
+// --- ATUALIZADO: addAluno ---
+// Adiciona dataCadastro (YYYY-MM-DD) e define statusAtivo = 1
+export async function addAluno(nome, cpf, status, ultimoPagamento = "", telefone = "", paradaId = null, dataCadastro) {
   return queueOperation(async () => {
     const database = await getDB();
-    console.log(`Tentando adicionar aluno: ${nome}, CPF: ${cpf}, Status: ${status}, Tel: ${telefone}, Parada: ${paradaId}`);
+    console.log(`Tentando adicionar aluno: ${nome}, Data Cadastro: ${dataCadastro}`);
     try {
-      // Insere o aluno APENAS na tabela alunos, como na versão antiga
       const result = await database.runAsync(
-          "INSERT INTO alunos (nome, cpf, ultimoPagamento, telefone, paradaId, status) VALUES (?, ?, ?, ?, ?, ?)",
-          [nome, cpf || "", ultimoPagamento, telefone || "", paradaId, status] // Usa o status passado como argumento
+          "INSERT INTO alunos (nome, cpf, ultimoPagamento, telefone, paradaId, status, dataCadastro, statusAtivo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+          [nome, cpf || "", ultimoPagamento, telefone || "", paradaId, status, dataCadastro]
       );
       console.log(`Aluno ${nome} adicionado com ID: ${result.lastInsertRowId}`);
-      return result; // Retorna o resultado da inserção
+      return result; 
     } catch (error) {
       console.error(`❌ Erro ao inserir aluno ${nome} no banco:`, error);
-      throw error; // Relança o erro para ser tratado no Context
+      throw error; 
     }
   });
 }
-// --- FIM DA CORREÇÃO ---
+// --- FIM DA ATUALIZAÇÃO ---
 
 
 // --- updateAluno CORRIGIDO para incluir horário ---
@@ -270,23 +297,28 @@ export async function updateAluno(id, nome, cpf, ultimoPagamento, telefone, para
 }
 // --- FIM CORREÇÃO ---
 
+// --- ATUALIZADO: deleteAluno (Soft Delete) ---
+// Agora apenas marca o aluno como inativo (statusAtivo = 0)
+// NÃO remove mais o histórico de pagamentos.
 export async function deleteAluno(id) {
  return queueOperation(async () => {
      const database = await getDB();
-     // Remove registros de pagamento antes de remover o aluno (devido ao ON DELETE CASCADE)
-     await database.runAsync("DELETE FROM historico_pagamentos WHERE aluno_id = ?", [id]);
-     return await database.runAsync("DELETE FROM alunos WHERE id = ?", [id]);
+     console.log(`Desativando aluno ID: ${id}`);
+     // Apenas atualiza o status para inativo
+     return await database.runAsync("UPDATE alunos SET statusAtivo = 0 WHERE id = ?", [id]);
  });
 }
+// --- FIM DA ATUALIZAÇÃO ---
+
 
 // --- Funções Paradas ---
 export async function getParadas() {
   const database = await getDB();
   const paradas = await database.getAllAsync("SELECT * FROM paradas ORDER BY horario"); // Ordena por horário
-  // Busca os alunos para cada parada
+  // Busca os alunos ATIVOS para cada parada
   return await Promise.all(
     paradas.map(async (parada) => {
-      const alunosNaParada = await database.getAllAsync("SELECT id, nome, horario FROM alunos WHERE paradaId = ?", [parada.id]);
+      const alunosNaParada = await database.getAllAsync("SELECT id, nome, horario FROM alunos WHERE paradaId = ? AND statusAtivo = 1", [parada.id]);
       return { ...parada, alunos: alunosNaParada, numAlunos: alunosNaParada.length };
     })
   );
@@ -400,7 +432,8 @@ export async function registrarOuAtualizarStatusPagamento(aluno_id, mes_ano, sta
     });
 }
 
-// Busca todos os alunos ATIVOS com seu status de pagamento para um mês específico (YYYY-MM)
+// --- ATUALIZADO: getAlunosComStatusParaMes ---
+// Implementa Regra 1 (persistência) e Regra 2 (novos alunos)
 export async function getAlunosComStatusParaMes(mes_ano) {
     return queueOperation(async () => {
         const database = await getDB();
@@ -408,18 +441,28 @@ export async function getAlunosComStatusParaMes(mes_ano) {
             console.error("Database connection not available in getAlunosComStatusParaMes");
             throw new Error("Database connection failed");
         }
-        // JOIN entre alunos e histórico_pagamentos para o mês_ano especificado
-        // COALESCE retorna o status do histórico, ou 'Não Pago' se não houver registro
+        
+        // Regra 1: Mostrar alunos ativos (statusAtivo = 1) que foram cadastrados ANTES ou NO mês visualizado (strftime(...) <= mes_ano).
+        // Regra 2: Mostrar alunos inativos (statusAtivo = 0) APENAS SE eles tiverem um registro de pagamento (hp.mes_ano = mes_ano) nesse mês específico.
         const query = `
             SELECT
                 a.id, a.nome, a.cpf, a.telefone, a.paradaId, a.horario,
                 COALESCE(hp.status, 'Não Pago') as status
             FROM alunos a
             LEFT JOIN historico_pagamentos hp ON a.id = hp.aluno_id AND hp.mes_ano = ?
+            WHERE
+                (
+                    a.statusAtivo = 1 AND strftime('%Y-%m', a.dataCadastro) <= ?
+                )
+                OR
+                (
+                    a.statusAtivo = 0 AND hp.mes_ano = ?
+                )
             ORDER BY a.nome;
         `;
         try {
-            const alunosComStatus = await database.getAllAsync(query, [mes_ano]);
+            // Passa o 'mes_ano' 3 vezes para preencher os '?'
+            const alunosComStatus = await database.getAllAsync(query, [mes_ano, mes_ano, mes_ano]);
             return alunosComStatus;
         } catch (error) {
             console.error(`Erro ao buscar alunos com status para ${mes_ano}:`, error);
@@ -427,6 +470,8 @@ export async function getAlunosComStatusParaMes(mes_ano) {
         }
     });
 }
+// --- FIM DA ATUALIZAÇÃO ---
+
 
 // --- Funções Auxiliares Internas ---
 

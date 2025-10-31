@@ -674,6 +674,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     fontWeight: "bold",
+    fontSize: 22,
   },
   botoesTopoContainer: {
     flexDirection: "row",
