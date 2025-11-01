@@ -250,11 +250,13 @@ export function AlunosProvider({ children }) {
       }
   };
 
+  // ****************************************************
+  // AQUI ESTÁ A MUDANÇA (1/2)
   // Esta função agora executa um "soft delete" (statusAtivo = 0)
-  const removerAlunoContext = (index) => {
-     const alunoParaRemover = alunosComStatus[index]; 
+  const removerAlunoContext = (alunoId) => { // Alterado de 'index' para 'alunoId'
+     const alunoParaRemover = alunosComStatus.find(a => a.id === alunoId); // Encontra o aluno pelo ID
      if (!alunoParaRemover) {
-        console.error("Aluno não encontrado para remoção no índice:", index);
+        console.error("Aluno não encontrado para remoção com ID:", alunoId);
         Alert.alert("Erro", "Aluno não encontrado para remoção.");
         return;
      }
@@ -268,7 +270,7 @@ export function AlunosProvider({ children }) {
           try {
             await deleteAluno(alunoParaRemover.id); // Agora faz UPDATE statusAtivo = 0
             await carregarAlunosBase(); // Recarrega a lista base (que só pega ativos)
-            // O useEffect [mesAnoVisivel, alunos] recarregará 'alunosComStatus'
+            // O useEffect [mesAnoVisivel, alunos] recarregará 'alunosComStatus' automaticamente
           } catch (e) {
             console.log("Erro ao remover aluno (Context):", e);
             Alert.alert("Erro", "Não foi possível remover o aluno.");
@@ -277,6 +279,9 @@ export function AlunosProvider({ children }) {
       },
     ]);
   };
+  // FIM DA MUDANÇA (1/2)
+  // ****************************************************
+
 
    const mesAnterior = () => {
        setMesAnoVisivel(prevMesAno => {
@@ -347,7 +352,7 @@ export function AlunosProvider({ children }) {
     <AlunosContext.Provider
       value={{
           alunos: alunosComStatus, 
-          alunosBase: alunos, 
+          alunosBase: alunos, // <--- EXPOR A LISTA BASE
           adicionarAluno: adicionarAlunoContext,
           editarAluno: editarAlunoContext,
           removerAluno: removerAlunoContext,

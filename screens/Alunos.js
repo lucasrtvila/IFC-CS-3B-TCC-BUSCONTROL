@@ -24,13 +24,16 @@ import Header from "../components/Header";
 const { width } = Dimensions.get("window");
 
 export default function AlunosScreen({ navigation }) {
+  // --- MUDANÇA 1/4: Buscar ambas as listas e funções do contexto ---
   const {
-    alunos,
+    alunos: alunosComStatus, // Lista com status (inclui inativos com histórico)
+    alunosBase, // Lista SÓ COM ALUNOS ATIVOS (sem status do mês)
     adicionarAluno,
     editarAluno,
     removerAluno,
     paradas,
-    carregarAlunos,
+    carregarAlunos: carregarAlunosComStatus, // Função que carrega alunosComStatus
+    carregarAlunosBase, // Função que carrega alunosBase
     carregarParadas,
   } = useContext(AlunosContext);
 
@@ -50,7 +53,7 @@ export default function AlunosScreen({ navigation }) {
   const [novoStatus, setNovoStatus] = useState("Não Pago");
   const [novoParadaId, setNovoParadaId] = useState(null);
 
-  const [alunoEditando, setAlunoEditando] = useState(null);
+  const [alunoEditando, setAlunoEditando] = useState(null); // Agora armazena o ID
   const [alunoSelecionado, setAlunoSelecionado] = useState(null);
   const [modalAdicionarVisivel, setModalAdicionarVisivel] = useState(false);
   const [modalEditarVisivel, setModalEditarVisivel] = useState(false);
@@ -61,20 +64,38 @@ export default function AlunosScreen({ navigation }) {
 
   useFocusEffect(
     React.useCallback(() => {
-      carregarAlunos();
+      // --- MUDANÇA 2/4: Carregar ambas as listas ---
+      carregarAlunosBase(); // Carrega alunos ATIVOS (para filtrar)
+      carregarAlunosComStatus(); // Carrega alunos com STATUS (para exibir)
       if (carregarParadas) carregarParadas();
     }, [])
   );
 
   useEffect(() => {
-    let alunosFiltrados = [...alunos];
+    // --- MUDANÇA 3/4: Filtrar a lista de status usando a lista de ativos ---
+    
+    // 1. Criar um Set de IDs de alunos ativos
+    const alunosAtivosIds = new Set(alunosBase.map(a => a.id));
+
+    // 2. Filtrar a lista que TEM o status (alunosComStatus)
+    //    para incluir APENAS aqueles que estão ATIVOS (presentes no Set)
+    let alunosFiltrados = alunosComStatus.filter(aluno => 
+      alunosAtivosIds.has(aluno.id)
+    );
+    
+    // 3. Aplicar filtros de exibição (Ordenação, Pagos)
     if (filtroAtivo === "nome") {
       alunosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome));
     } else if (filtroAtivo === "pagos") {
+      // Agora filtra a lista correta (ativos com status)
       alunosFiltrados = alunosFiltrados.filter((a) => a.status === "Pago");
     }
+    
     setAlunosExibidos(alunosFiltrados);
-  }, [alunos, filtroAtivo]);
+    
+  }, [alunosComStatus, alunosBase, filtroAtivo]); // Reage a AMBAS as listas
+  // --- FIM DA MUDANÇA 3/4 ---
+
 
   const limparFiltros = () => {
     setFiltroAtivo(null);
@@ -174,22 +195,24 @@ export default function AlunosScreen({ navigation }) {
     setModalDetalhesVisivel(true);
   };
 
+  // --- MUDANÇA 4/4 (Parte A): Armazena o ID para edição ---
   const abrirEdicao = (aluno) => {
     setModalDetalhesVisivel(false);
-    const index = alunos.findIndex((a) => a.id === aluno.id);
-    if (index === -1) return;
-
-    setAlunoEditando(index);
+    
+    // Armazena o ID do aluno que está sendo editado
+    setAlunoEditando(aluno.id); 
+    
+    // O 'aluno' clicado (de 'alunosExibidos') já tem o status correto do mês
     setNovoNome(aluno.nome || "");
     setNovoCPF(aluno.cpf || "");
     setNovoTelefone(aluno.telefone || "");
     setNovoParadaId(aluno.paradaId || null);
-    setNovoStatus(aluno.status === "Pago" ? "Pago" : "Não Pago");
+    setNovoStatus(aluno.status === "Pago" ? "Pago" : "Não Pago"); // Usa o status do item clicado
     setEditDropdownVisivel(false);
     setModalEditarVisivel(true);
   };
 
-  // --- ATUALIZADO: salvarEdicao com Alert.alert ---
+  // --- MUDANÇA 4/4 (Parte B): Usa o ID (alunoEditando) para achar o index ---
   const salvarEdicao = () => {
     if (!novoNome.trim()) {
       Alert.alert("Erro", "Nome é obrigatório!");
@@ -209,8 +232,19 @@ export default function AlunosScreen({ navigation }) {
           text: "Salvar",
           style: "default",
           onPress: () => {
+            // A função 'editarAluno' do contexto espera o 'index' da lista 'alunosComStatus'
+            // Encontramos esse index usando o ID que salvamos em 'alunoEditando'
+            const indexEmAlunosComStatus = alunosComStatus.findIndex(
+              a => a.id === alunoEditando // alunoEditando é o ID
+            );
+
+            if (indexEmAlunosComStatus === -1) {
+                Alert.alert("Erro", "Não foi possível encontrar o aluno para editar. Tente novamente.");
+                return;
+            }
+
             editarAluno(
-              alunoEditando,
+              indexEmAlunosComStatus, // Passa o index correto
               novoNome,
               novoCPF,
               novoStatus,
@@ -223,9 +257,8 @@ export default function AlunosScreen({ navigation }) {
       ]
     );
   };
-  // --- FIM DA ATUALIZAÇÃO ---
+  // --- FIM DA MUDANÇA 4/4 ---
 
-  // --- ATUALIZADO: handleAdicionarAluno com Alert.alert ---
   const handleAdicionarAluno = () => {
     if (!nome.trim()) {
       Alert.alert("Erro", "Nome é obrigatório!");
@@ -256,7 +289,6 @@ export default function AlunosScreen({ navigation }) {
       ]
     );
   };
-  // --- FIM DA ATUALIZAÇÃO ---
 
   const abrirModalAdicionar = () => {
     setNome("");
@@ -270,13 +302,10 @@ export default function AlunosScreen({ navigation }) {
 
   const handleRemoverAluno = () => {
     if (alunoSelecionado) {
-      const index = alunos.findIndex((a) => a.id === alunoSelecionado.id);
-      if (index !== -1) {
-        setModalEditarVisivel(false);
-        setModalDetalhesVisivel(false);
-        // A função removerAluno (do contexto) já possui o Alert.alert
-        removerAluno(index);
-      }
+      setModalEditarVisivel(false);
+      setModalDetalhesVisivel(false);
+      // A função removerAluno (do contexto) já espera o ID
+      removerAluno(alunoSelecionado.id);
     }
   };
 
@@ -285,7 +314,6 @@ export default function AlunosScreen({ navigation }) {
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
         <View style={styles.content}>
-          {/* AQUI ESTÁ A MUDANÇA (1/2) */}
           <Header navigation={navigation} style={styles.header} />
           <Texto style={styles.titulo}>Alunos</Texto>
 
@@ -302,7 +330,7 @@ export default function AlunosScreen({ navigation }) {
           </View>
 
           <FlatList
-            data={alunosExibidos}
+            data={alunosExibidos} // Usa a nova lista filtrada
             keyExtractor={(item) => String(item.id)}
             style={styles.lista}
             ListEmptyComponent={
@@ -323,11 +351,11 @@ export default function AlunosScreen({ navigation }) {
                     {paradas.find((p) => p.id === item.paradaId)?.nome || "N/A"}
                   </Texto>
                 </View>
-                {/* ******************************************************
-                 * AQUI ESTÁ A MUDANÇA SOLICITADA
-                 ******************************************************
-                 */}
-                {/* --- dentro do renderItem (card) --- */}
+                {/* Esta seção agora exibirá o status do 'item'
+                  que vem de 'alunosExibidos'. Como 'alunosExibidos'
+                  agora é baseado em 'alunosComStatus', o 'item.status'
+                  será "Pago" ou "Não Pago" referente ao mês visível.
+                */}
                 <View style={styles.ladoDireito}>
                   <Texto
                     style={
@@ -349,11 +377,6 @@ export default function AlunosScreen({ navigation }) {
                     </TouchableOpacity>
                   )}
                 </View>
-
-                {/* ******************************************************
-                 * FIM DA MUDANÇA
-                 ******************************************************
-                 */}
               </TouchableOpacity>
             )}
             contentContainerStyle={{ paddingBottom: 20 }}
