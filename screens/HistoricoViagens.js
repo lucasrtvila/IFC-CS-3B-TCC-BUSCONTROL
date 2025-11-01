@@ -42,7 +42,16 @@ const ViagemCard = ({ item, getNomeVeiculo }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={() => setExpandido(!expandido)}>
       <View style={styles.cardHeader}>
-        <Texto style={styles.cardTitulo}>{item.destino}</Texto>
+        {/* --- MUDANÇA AQUI (1/2): Adicionado numberOfLines e ellipsizeMode --- */}
+        <Texto 
+          style={styles.cardTitulo} 
+          numberOfLines={1} 
+          ellipsizeMode="tail"
+        >
+          {item.destino}
+        </Texto>
+        {/* --- FIM DA MUDANÇA --- */}
+        
         {/* Só mostra o tipo se for 'so_ida' ou 'ida_e_volta' */}
         {(item.tipoViagem === 'so_ida' || item.tipoViagem === 'ida_e_volta') && (
              <Texto style={styles.cardTipoViagem}>{getTipoViagemLabel(item.tipoViagem)}</Texto>
@@ -197,7 +206,8 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 18,
         fontWeight: "bold",
-        flex: 1, // Permite que o título ocupe o espaço necessário
+        flex: 1, // Permite que o título ocupe o espaço
+        flexShrink: 1, // --- MUDANÇA AQUI (2/2): Permite que este item encolha
         marginRight: 10, // Adiciona espaço entre título e tipo
       },
       cardTipoViagem: {
@@ -205,6 +215,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontStyle: 'italic',
         textAlign: 'right', // Alinha à direita
+        flexShrink: 0, // --- MUDANÇA AQUI (2/2): Impede que este item encolha
       },
       cardConteudo: {
         marginTop: 15,
