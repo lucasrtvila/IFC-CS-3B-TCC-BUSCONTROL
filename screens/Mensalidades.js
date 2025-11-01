@@ -23,9 +23,9 @@ const { width } = Dimensions.get("window");
 // Funções formatarData, formatarDataISO, parseDataISO (mantidas)
 function formatarData(data) {
     if (!data) return "Selecione a data";
-    const dia = data.getUTCDate().toString().padStart(2, "0"); // Usar getUTCDate
-    const mes = (data.getUTCMonth() + 1).toString().padStart(2, "0"); // Usar getUTCMonth
-    const ano = data.getUTCFullYear(); // Usar getUTCFullYear
+    const dia = data.getDate().toString().padStart(2, "0"); // MUDANÇA
+    const mes = (data.getMonth() + 1).toString().padStart(2, "0"); // MUDANÇA
+    const ano = data.getFullYear(); // MUDANÇA
     return `${dia}/${mes}/${ano}`;
 }
 // Manter formatarDataISO e parseDataISO como estão no AlunosContext.js se precisar usá-las aqui

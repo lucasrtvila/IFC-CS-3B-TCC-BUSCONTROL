@@ -44,7 +44,7 @@ export default function AlunosScreen({ navigation }) {
   const [nome, setNome] = useState("");
   const [CPF, setCPF] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [status, setStatus] = useState("Não Pago");
+  // const [status, setStatus] = useState("Não Pago"); // <-- REMOVIDO
   const [paradaId, setParadaId] = useState(null);
 
   const [novoNome, setNovoNome] = useState("");
@@ -58,7 +58,7 @@ export default function AlunosScreen({ navigation }) {
   const [modalAdicionarVisivel, setModalAdicionarVisivel] = useState(false);
   const [modalEditarVisivel, setModalEditarVisivel] = useState(false);
   const [modalDetalhesVisivel, setModalDetalhesVisivel] = useState(false);
-  const [dropdownVisivel, setDropdownVisivel] = useState(false);
+  // const [dropdownVisivel, setDropdownVisivel] = useState(false); // <-- REMOVIDO
   const [editDropdownVisivel, setEditDropdownVisivel] = useState(false);
   const [filtroDropdownVisivel, setFiltroDropdownVisivel] = useState(false);
 
@@ -278,7 +278,10 @@ export default function AlunosScreen({ navigation }) {
           text: "Adicionar",
           style: "default",
           onPress: () => {
-            adicionarAluno(nome, CPF, status, "", telefone, paradaId);
+            // --- MODIFICAÇÃO AQUI ---
+            // Passa "Não Pago" como status padrão
+            adicionarAluno(nome, CPF, "Não Pago", "", telefone, paradaId);
+            // --- FIM DA MODIFICAÇÃO ---
             setNome("");
             setCPF("");
             setTelefone("");
@@ -294,9 +297,9 @@ export default function AlunosScreen({ navigation }) {
     setNome("");
     setCPF("");
     setTelefone("");
-    setStatus("Não Pago");
+    // setStatus("Não Pago"); // <-- REMOVIDO (Não é mais necessário)
     setParadaId(null);
-    setDropdownVisivel(false);
+    // setDropdownVisivel(false); // <-- REMOVIDO
     setModalAdicionarVisivel(true);
   };
 
@@ -543,33 +546,9 @@ export default function AlunosScreen({ navigation }) {
               }}
               useNativeAndroidPickerStyle={false}
             />
-            <Texto style={styles.h1}>Status:</Texto>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setDropdownVisivel(!dropdownVisivel)}
-            >
-              <Texto style={styles.dropdownTexto}>{status}</Texto>
-            </TouchableOpacity>
-            {dropdownVisivel && (
-              <View style={styles.dropdownOpcoes}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setStatus("Pago");
-                    setDropdownVisivel(false);
-                  }}
-                >
-                  <Texto style={styles.opcaoTexto}>Pago</Texto>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setStatus("Não Pago");
-                    setDropdownVisivel(false);
-                  }}
-                >
-                  <Texto style={styles.opcaoTextoUltima}>Não Pago</Texto>
-                </TouchableOpacity>
-              </View>
-            )}
+            
+            {/* --- BLOCO DE STATUS REMOVIDO DAQUI --- */}
+
             <View style={styles.botoesModal}>
               <TouchableOpacity
                 style={styles.botaoCancelar}
