@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import {
-  View, // Alterado de SafeAreaView
+  View,
   TouchableOpacity,
   Modal,
   TextInput,
@@ -10,7 +10,7 @@ import {
   Dimensions,
   StatusBar,
   Linking,
-  Alert, // Alert está importado
+  Alert,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { useFocusEffect } from "@react-navigation/native";
@@ -24,16 +24,15 @@ import Header from "../components/Header";
 const { width } = Dimensions.get("window");
 
 export default function AlunosScreen({ navigation }) {
-  // --- MUDANÇA 1/4: Buscar ambas as listas e funções do contexto ---
   const {
-    alunos: alunosComStatus, // Lista com status (inclui inativos com histórico)
-    alunosBase, // Lista SÓ COM ALUNOS ATIVOS (sem status do mês)
+    alunos: alunosComStatus,
+    alunosBase,
     adicionarAluno,
     editarAluno,
     removerAluno,
     paradas,
-    carregarAlunos: carregarAlunosComStatus, // Função que carrega alunosComStatus
-    carregarAlunosBase, // Função que carrega alunosBase
+    carregarAlunos: carregarAlunosComStatus,
+    carregarAlunosBase,
     carregarParadas,
   } = useContext(AlunosContext);
 
@@ -44,7 +43,6 @@ export default function AlunosScreen({ navigation }) {
   const [nome, setNome] = useState("");
   const [CPF, setCPF] = useState("");
   const [telefone, setTelefone] = useState("");
-  // const [status, setStatus] = useState("Não Pago"); // <-- REMOVIDO
   const [paradaId, setParadaId] = useState(null);
 
   const [novoNome, setNovoNome] = useState("");
@@ -53,49 +51,36 @@ export default function AlunosScreen({ navigation }) {
   const [novoStatus, setNovoStatus] = useState("Não Pago");
   const [novoParadaId, setNovoParadaId] = useState(null);
 
-  const [alunoEditando, setAlunoEditando] = useState(null); // Agora armazena o ID
+  const [alunoEditando, setAlunoEditando] = useState(null);
   const [alunoSelecionado, setAlunoSelecionado] = useState(null);
   const [modalAdicionarVisivel, setModalAdicionarVisivel] = useState(false);
   const [modalEditarVisivel, setModalEditarVisivel] = useState(false);
   const [modalDetalhesVisivel, setModalDetalhesVisivel] = useState(false);
-  // const [dropdownVisivel, setDropdownVisivel] = useState(false); // <-- REMOVIDO
   const [editDropdownVisivel, setEditDropdownVisivel] = useState(false);
   const [filtroDropdownVisivel, setFiltroDropdownVisivel] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      // --- MUDANÇA 2/4: Carregar ambas as listas ---
-      carregarAlunosBase(); // Carrega alunos ATIVOS (para filtrar)
-      carregarAlunosComStatus(); // Carrega alunos com STATUS (para exibir)
+      carregarAlunosBase();
+      carregarAlunosComStatus();
       if (carregarParadas) carregarParadas();
     }, [])
   );
 
   useEffect(() => {
-    // --- MUDANÇA 3/4: Filtrar a lista de status usando a lista de ativos ---
-    
-    // 1. Criar um Set de IDs de alunos ativos
     const alunosAtivosIds = new Set(alunosBase.map(a => a.id));
-
-    // 2. Filtrar a lista que TEM o status (alunosComStatus)
-    //    para incluir APENAS aqueles que estão ATIVOS (presentes no Set)
     let alunosFiltrados = alunosComStatus.filter(aluno => 
       alunosAtivosIds.has(aluno.id)
     );
-    
-    // 3. Aplicar filtros de exibição (Ordenação, Pagos)
     if (filtroAtivo === "nome") {
       alunosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome));
     } else if (filtroAtivo === "pagos") {
-      // Agora filtra a lista correta (ativos com status)
       alunosFiltrados = alunosFiltrados.filter((a) => a.status === "Pago");
     }
     
     setAlunosExibidos(alunosFiltrados);
     
-  }, [alunosComStatus, alunosBase, filtroAtivo]); // Reage a AMBAS as listas
-  // --- FIM DA MUDANÇA 3/4 ---
-
+  }, [alunosComStatus, alunosBase, filtroAtivo]);
 
   const limparFiltros = () => {
     setFiltroAtivo(null);
@@ -136,7 +121,7 @@ export default function AlunosScreen({ navigation }) {
                   <td>${aluno.telefone || "Não informado"}</td>
                   <td>${aluno.status || ""}</td>
                   <td>${
-                    paradas.find((p) => p.id === aluno.paradaId)?.nome || "N/A"
+                    paradas.find((p) => p.id === aluno.paradaId)?.nome || "Não informada"
                   }</td>
                 </tr>
               `
@@ -195,24 +180,18 @@ export default function AlunosScreen({ navigation }) {
     setModalDetalhesVisivel(true);
   };
 
-  // --- MUDANÇA 4/4 (Parte A): Armazena o ID para edição ---
   const abrirEdicao = (aluno) => {
     setModalDetalhesVisivel(false);
-    
-    // Armazena o ID do aluno que está sendo editado
     setAlunoEditando(aluno.id); 
-    
-    // O 'aluno' clicado (de 'alunosExibidos') já tem o status correto do mês
     setNovoNome(aluno.nome || "");
     setNovoCPF(aluno.cpf || "");
     setNovoTelefone(aluno.telefone || "");
     setNovoParadaId(aluno.paradaId || null);
-    setNovoStatus(aluno.status === "Pago" ? "Pago" : "Não Pago"); // Usa o status do item clicado
+    setNovoStatus(aluno.status === "Pago" ? "Pago" : "Não Pago");
     setEditDropdownVisivel(false);
     setModalEditarVisivel(true);
   };
 
-  // --- MUDANÇA 4/4 (Parte B): Usa o ID (alunoEditando) para achar o index ---
   const salvarEdicao = () => {
     if (!novoNome.trim()) {
       Alert.alert("Erro", "Nome é obrigatório!");
@@ -232,8 +211,6 @@ export default function AlunosScreen({ navigation }) {
           text: "Salvar",
           style: "default",
           onPress: () => {
-            // A função 'editarAluno' do contexto espera o 'index' da lista 'alunosComStatus'
-            // Encontramos esse index usando o ID que salvamos em 'alunoEditando'
             const indexEmAlunosComStatus = alunosComStatus.findIndex(
               a => a.id === alunoEditando // alunoEditando é o ID
             );
@@ -244,7 +221,7 @@ export default function AlunosScreen({ navigation }) {
             }
 
             editarAluno(
-              indexEmAlunosComStatus, // Passa o index correto
+              indexEmAlunosComStatus,
               novoNome,
               novoCPF,
               novoStatus,
@@ -257,7 +234,6 @@ export default function AlunosScreen({ navigation }) {
       ]
     );
   };
-  // --- FIM DA MUDANÇA 4/4 ---
 
   const handleAdicionarAluno = () => {
     if (!nome.trim()) {
@@ -278,10 +254,7 @@ export default function AlunosScreen({ navigation }) {
           text: "Adicionar",
           style: "default",
           onPress: () => {
-            // --- MODIFICAÇÃO AQUI ---
-            // Passa "Não Pago" como status padrão
             adicionarAluno(nome, CPF, "Não Pago", "", telefone, paradaId);
-            // --- FIM DA MODIFICAÇÃO ---
             setNome("");
             setCPF("");
             setTelefone("");
@@ -297,9 +270,7 @@ export default function AlunosScreen({ navigation }) {
     setNome("");
     setCPF("");
     setTelefone("");
-    // setStatus("Não Pago"); // <-- REMOVIDO (Não é mais necessário)
     setParadaId(null);
-    // setDropdownVisivel(false); // <-- REMOVIDO
     setModalAdicionarVisivel(true);
   };
 
@@ -307,7 +278,6 @@ export default function AlunosScreen({ navigation }) {
     if (alunoSelecionado) {
       setModalEditarVisivel(false);
       setModalDetalhesVisivel(false);
-      // A função removerAluno (do contexto) já espera o ID
       removerAluno(alunoSelecionado.id);
     }
   };
@@ -333,7 +303,7 @@ export default function AlunosScreen({ navigation }) {
           </View>
 
           <FlatList
-            data={alunosExibidos} // Usa a nova lista filtrada
+            data={alunosExibidos}
             keyExtractor={(item) => String(item.id)}
             style={styles.lista}
             ListEmptyComponent={
@@ -354,11 +324,6 @@ export default function AlunosScreen({ navigation }) {
                     {paradas.find((p) => p.id === item.paradaId)?.nome || "N/A"}
                   </Texto>
                 </View>
-                {/* Esta seção agora exibirá o status do 'item'
-                  que vem de 'alunosExibidos'. Como 'alunosExibidos'
-                  agora é baseado em 'alunosComStatus', o 'item.status'
-                  será "Pago" ou "Não Pago" referente ao mês visível.
-                */}
                 <View style={styles.ladoDireito}>
                   <Texto
                     style={
@@ -396,7 +361,7 @@ export default function AlunosScreen({ navigation }) {
 
       <BarraNavegacao navigation={navigation} abaAtiva="Alunos" />
 
-      {/* Modais aqui... */}
+      {/* Modais */}
       <Modal
         visible={filtroDropdownVisivel}
         transparent={true}
@@ -546,9 +511,6 @@ export default function AlunosScreen({ navigation }) {
               }}
               useNativeAndroidPickerStyle={false}
             />
-            
-            {/* --- BLOCO DE STATUS REMOVIDO DAQUI --- */}
-
             <View style={styles.botoesModal}>
               <TouchableOpacity
                 style={styles.botaoCancelar}
@@ -654,7 +616,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingTop: 30,
-    paddingVertical: 30, // Adicionado padding vertical
+    paddingVertical: 30,
   },
   container: {
     flex: 1,
@@ -664,11 +626,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  // AQUI ESTÁ A MUDANÇA (2/2)
   header: {
     alignItems: "center",
-    marginTop: -10, // Move o header para CIMA
-    marginBottom: 5, // Ajusta o espaço antes do título
+    marginTop: -10,
+    marginBottom: 5,
   },
   titulo: {
     fontSize: width > 768 ? 28 : 24,

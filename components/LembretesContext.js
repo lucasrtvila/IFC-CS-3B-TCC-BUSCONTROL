@@ -11,9 +11,6 @@ import {
 } from "../database/database";
 
 export const LembretesContext = createContext();
-
-// --- INÍCIO: Funções Auxiliares ---
-// Funções para formatar Data/Hora para o DB
 function formatarData(data) {
   if (!data) return "";
   const dia = data.getDate().toString().padStart(2, "0");
@@ -29,7 +26,6 @@ function formatarHora(data) {
   return `${hora}:${min}`;
 }
 
-// Configura o handler de notificações
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -38,7 +34,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Função para pedir permissão
 async function registerForPushNotificationsAsync() {
   let token;
   if (Device.isDevice) {
@@ -56,7 +51,6 @@ async function registerForPushNotificationsAsync() {
       );
       return;
     }
-    // Configurações para Android
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
         name: "default",
@@ -66,13 +60,11 @@ async function registerForPushNotificationsAsync() {
       });
     }
   } else {
-    // Alert.alert("Aviso", "Notificações não funcionam em simulador.");
     console.log("Notificações não funcionam em simulador.");
   }
 
   return token;
 }
-// --- FIM: Funções Auxiliares ---
 
 export const LembretesProvider = ({ children }) => {
   const [lembretes, setLembretes] = useState([]);
@@ -96,7 +88,6 @@ export const LembretesProvider = ({ children }) => {
 
   const adicionarLembrete = async (titulo, triggerDate) => {
     try {
-      // 1. Agendar a notificação
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: "Lembrete BusControl",
@@ -120,16 +111,12 @@ export const LembretesProvider = ({ children }) => {
 
   const editarLembrete = async (id, novoTitulo, novoTriggerDate) => {
     try {
-      // 1. Encontrar o lembrete antigo para pegar o ID da notificação
       const lembreteAntigo = lembretes.find((l) => l.id === id);
       if (lembreteAntigo && lembreteAntigo.notificationId) {
-        // 2. Cancelar a notificação antiga
         await Notifications.cancelScheduledNotificationAsync(
           lembreteAntigo.notificationId
         );
       }
-
-      // 3. Agendar a nova notificação
       const newNotificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: "Lembrete BusControl (Atualizado)",
@@ -138,11 +125,9 @@ export const LembretesProvider = ({ children }) => {
         trigger: novoTriggerDate,
       });
 
-      // 4. Formatar dados para o DB
       const novaDataStr = formatarData(novoTriggerDate);
       const novaHoraStr = formatarHora(novoTriggerDate);
 
-      // 5. Atualizar no DB
       await editLembrete(
         id,
         novoTitulo,
@@ -168,15 +153,12 @@ export const LembretesProvider = ({ children }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              // 1. Encontrar o lembrete para pegar o ID da notificação
               const lembrete = lembretes.find((l) => l.id === id);
               if (lembrete && lembrete.notificationId) {
-                // 2. Cancelar a notificação agendada
                 await Notifications.cancelScheduledNotificationAsync(
                   lembrete.notificationId
                 );
               }
-              // 3. Remover do DB
               await removeLembrete(id);
               await carregarLembretes();
             } catch (e) {

@@ -7,8 +7,7 @@ import {
   StatusBar,
   FlatList,
   Modal,
-  Alert, // Importa o Alert
-  Image,
+  Alert,
 } from "react-native";
 import Texto from "../components/Texto";
 import Header from "../components/Header";
@@ -93,8 +92,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     const segundos = (totalSegundos % 60).toString().padStart(2, "0");
     return `${minutos}:${segundos}`;
   };
-
-  // --- FUNÇÃO handleEncerramento MODIFICADA ---
   const handleEncerramento = async () => {
     const titulo = "Confirmar Encerramento";
     const mensagem =
@@ -111,7 +108,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
           text: "Encerrar",
           style: "destructive",
           onPress: async () => {
-            // Lógica original movida para dentro do onPress
             const duracaoFormatada = formatarDuracao(duracao);
             const dataViagem = new Date().toLocaleDateString("pt-BR");
 
@@ -192,11 +188,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                   historicoId,
                 };
                 salvarViagemComoTemplate(template);
-                // --- ALERTA REMOVIDO DAQUI ---
-                // Alert.alert(
-                //   "Ida Concluída",
-                //   "A viagem de ida foi encerrada. Você pode iniciar a volta pela tela inicial."
-                // );
               } else if (tipoViagem !== "volta") {
                 console.error(
                   "Erro crítico: historicoId é nulo ao tentar salvar template para ida_e_volta."
@@ -207,25 +198,23 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                 );
                 limparTemplate();
                 navigation.navigate("Inicial");
-                return; // Retorna de dentro do onPress
+                return;
               }
             } else {
               limparTemplate();
             }
 
             navigation.navigate("Inicial");
-          }, // Fim do onPress
+          },
         },
       ]
     );
   };
-  // --- FIM DA MODIFICAÇÃO ---
 
   const verAlunosDaParada = (parada) => {
     setAlunosNaParada(parada.alunos || []);
     setParadaSelecionadaNome(parada.nome);
     setParadaSelecionadaId(parada.id);
-    // Inicializa a seleção temporária com os alunos já marcados anteriormente para essa parada (se houver)
     setAlunosSelecionadosNaParadaTemp(
       new Set(alunosEmbarcadosNaIda[parada.id] || [])
     );
@@ -244,9 +233,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     });
   };
 
-  // --- FUNÇÃO handleConcluirParada MODIFICADA ---
   const handleConcluirParada = () => {
-    // Calcula a mensagem de confirmação
     const todosSelecionados =
       alunosNaParada.length > 0 &&
       alunosSelecionadosNaParadaTemp.size === alunosNaParada.length;
@@ -270,7 +257,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
         "Nenhum aluno esperado nesta parada. Deseja marcar a parada como concluída?";
     }
 
-    // Exibe o alerta de confirmação (com Cancelar)
     Alert.alert(
       "Concluir Parada",
       mensagemConfirmacao,
@@ -280,7 +266,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
           text: "Confirmar",
           style: "default",
           onPress: () => {
-            // Lógica original executada apenas ao confirmar
             setAlunosEmbarcadosNaIda((prevState) => ({
               ...prevState,
               [paradaSelecionadaId]: Array.from(
@@ -292,7 +277,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
               prevParadas.filter((p) => p.id !== paradaSelecionadaId)
             );
             setModalAlunosVisivel(false);
-            // Limpa estados do modal após fechar
             setAlunosSelecionadosNaParadaTemp(new Set());
             setParadaSelecionadaId(null);
             setParadaSelecionadaNome("");
@@ -302,7 +286,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
       ]
     );
   };
-  // --- FIM DA MODIFICAÇÃO ---
 
   const confirmarDesembarque = (alunoId) => {
     setAlunosNaVolta((prevState) =>
@@ -312,7 +295,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
     );
   };
 
-  // Esta função (handleEntregarClick) já usava Alert.alert, está correta.
   const handleEntregarClick = (aluno) => {
     Alert.alert(
       "Confirmar Entrega",
@@ -428,7 +410,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
 
           <TouchableOpacity
             style={styles.botaoEncerrar}
-            onPress={handleEncerramento} // Função já usa confirmação
+            onPress={handleEncerramento}
           >
             <Texto style={styles.botaoTexto}>
               {tipoViagem === "ida_e_volta" ? "Encerrar Ida" : "Encerrar Viagem"}
@@ -436,7 +418,6 @@ export default function ViagemAtivaScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* --- MODAL MODIFICADO --- */}
         <Modal visible={modalAlunosVisivel} animationType="fade" transparent>
           <View style={styles.modalFundo}>
             <View style={styles.modalBox}>
@@ -466,14 +447,13 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                   </Texto>
                 }
               />
-              {/* --- BOTÕES DO MODAL MODIFICADOS --- */}
               <View style={styles.botoesModalContainer}>
                 <TouchableOpacity
                   style={[
                     styles.botaoModalAcao,
                     styles.botaoCancelarModal,
-                  ]} // Botão Cancelar
-                  onPress={() => setModalAlunosVisivel(false)} // Apenas fecha o modal
+                  ]}
+                  onPress={() => setModalAlunosVisivel(false)}
                 >
                   <Texto style={styles.botaoModalTexto}>Cancelar</Texto>
                 </TouchableOpacity>
@@ -481,17 +461,15 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                   style={[
                     styles.botaoModalAcao,
                     styles.botaoConcluirParada,
-                  ]} // Botão Concluir
-                  onPress={handleConcluirParada} // Chama a função modificada
+                  ]}
+                  onPress={handleConcluirParada}
                 >
                   <Texto style={styles.botaoModalTexto}>Concluir Parada</Texto>
                 </TouchableOpacity>
               </View>
-              {/* --- FIM DA MODIFICAÇÃO DOS BOTÕES --- */}
             </View>
           </View>
         </Modal>
-        {/* --- FIM DA MODIFICAÇÃO DO MODAL --- */}
       </View>
     </>
   );
@@ -550,7 +528,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  // Estilos para Parada (Ida)
   cardParada: {
     backgroundColor: "#1c2337",
     borderRadius: 15,
@@ -587,7 +564,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 4,
   },
-  // Estilos para Aluno (Volta)
   cardAlunoVoltaContainer: {
     backgroundColor: "#1c2337",
     borderRadius: 12,
@@ -618,7 +594,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  // Botão de Encerrar
   botaoEncerrar: {
     backgroundColor: "#c41628ff",
     paddingVertical: 16,
@@ -631,7 +606,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // --- Estilos do Modal (Ida) MODIFICADOS ---
   modalFundo: {
     flex: 1,
     justifyContent: "center",
@@ -643,7 +617,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     width: "90%",
-    maxHeight: "80%", // Mantém altura máxima
+    maxHeight: "80%",
   },
   modalTitulo: {
     color: "#fff",
@@ -653,7 +627,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   alunosList: {
-    maxHeight: Dimensions.get("window").height * 0.45, // Ajuste a altura se necessário
+    maxHeight: Dimensions.get("window").height * 0.45,
     marginBottom: 15,
   },
   alunoItem: {
@@ -662,11 +636,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: "#c41628ff", // Vermelho por padrão (não selecionado)
+    borderLeftColor: "#c41628ff", 
   },
   alunoItemSelected: {
-    backgroundColor: "#1E40AF", // Azul mais escuro quando selecionado
-    borderLeftColor: "limegreen", // Verde quando selecionado
+    backgroundColor: "#1E40AF", 
+    borderLeftColor: "limegreen",
   },
   alunoItemText: {
     color: "#fff",
@@ -678,30 +652,27 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     fontSize: 14,
   },
-  // --- NOVOS ESTILOS PARA BOTÕES DO MODAL ---
   botoesModalContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 15, // Espaço acima dos botões
-    gap: 10, // Espaço entre os botões
+    marginTop: 15,
+    gap: 10,
   },
   botaoModalAcao: {
-    flex: 1, // Faz os botões dividirem o espaço
+    flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
   },
   botaoCancelarModal: {
-    backgroundColor: "#373e4f", // Cinza
+    backgroundColor: "#373e4f", 
   },
   botaoConcluirParada: {
-    backgroundColor: "#0B49C1", // Azul
+    backgroundColor: "#0B49C1", 
   },
   botaoModalTexto: {
-    // Texto para ambos botões
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
-  // --- FIM DOS NOVOS ESTILOS ---
 });

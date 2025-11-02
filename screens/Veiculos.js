@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  Dimensions, // <-- ADICIONADO
+  Dimensions,
 } from "react-native";
 import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
 
-const { width } = Dimensions.get("window"); // <-- ADICIONADO
-const isTablet = width > 768; // <-- ADICIONADO
+const { width } = Dimensions.get("window"); 
+const isTablet = width > 768;
 
 export default function VeiculosScreen({ navigation }) {
   const { veiculos, adicionarVeiculo, editarVeiculo, removerVeiculo } =
@@ -260,8 +260,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingHorizontal: isTablet ? 40 : 20, // <-- MODIFICADO
-    paddingVertical: isTablet ? 50 : 30, // <-- MODIFICADO
+    paddingHorizontal: isTablet ? 40 : 20,
+    paddingVertical: isTablet ? 50 : 30,
   },
 
   conteudo: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
 
   titulo: {
     color: "#FFF",
-    fontSize: isTablet ? 32 : 28, // <-- MODIFICADO
+    fontSize: isTablet ? 32 : 28,
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -326,8 +326,8 @@ const styles = StyleSheet.create({
 
   veiculoItem: {
     backgroundColor: "#1c2337",
-    paddingVertical: isTablet ? 18 : 14, // <-- MODIFICADO
-    paddingHorizontal: isTablet ? 30 : 24, // <-- MODIFICADO
+    paddingVertical: isTablet ? 18 : 14,
+    paddingHorizontal: isTablet ? 30 : 24, 
     borderRadius: 16,
     marginTop: 20,
     flexDirection: "row",
@@ -340,14 +340,14 @@ const styles = StyleSheet.create({
 
   veiculoTitulo: {
     color: "#fff",
-    fontSize: isTablet ? 22 : 20, // <-- MODIFICADO
+    fontSize: isTablet ? 22 : 20,
     fontWeight: "bold",
     marginBottom: 5,
   },
 
   veiculoStatus: {
     color: "#cfcfcf",
-    fontSize: isTablet ? 16 : 14, // <-- MODIFICADO
+    fontSize: isTablet ? 16 : 14,
   },
 
   excluirContainer: {
@@ -357,8 +357,7 @@ const styles = StyleSheet.create({
   },
 
   botaoRemover: {
-    // Mantém como está ou ajusta se necessário
-    paddingHorizontal: 15, // Adiciona padding horizontal
+    paddingHorizontal: 15,
     height: 35,
     borderRadius: 8,
     justifyContent: "center",
@@ -366,19 +365,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#c41628ff",
   },
   botaoAcaoTexto: {
-    fontSize: isTablet ? 16 : 14, // <-- MODIFICADO
+    fontSize: isTablet ? 16 : 14,
     fontWeight: "bold",
-    color: "#fff", // Branco para melhor contraste
+    color: "#fff",
   },
 
   input: {
     backgroundColor: "#373e4f",
     width: "100%",
     borderRadius: 16,
-    paddingHorizontal: isTablet ? 20 : 15, // <-- MODIFICADO
-    paddingVertical: isTablet ? 16 : 12, // <-- MODIFICADO
+    paddingHorizontal: isTablet ? 20 : 15, 
+    paddingVertical: isTablet ? 16 : 12,
     marginBottom: 15,
-    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
+    fontSize: isTablet ? 18 : 16,
     color: "#ffffff",
   },
 
@@ -392,7 +391,7 @@ const styles = StyleSheet.create({
 
   dropdownTexto: {
     color: "#ffffff",
-    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
+    fontSize: isTablet ? 18 : 16,
   },
 
   dropdownOpcoes: {
@@ -405,8 +404,8 @@ const styles = StyleSheet.create({
 
   opcaoTexto: {
     color: "#ffffff",
-    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
-    paddingVertical: 10, // <-- MODIFICADO
+    fontSize: isTablet ? 18 : 16,
+    paddingVertical: 10,
     paddingHorizontal: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#6666",
@@ -414,14 +413,14 @@ const styles = StyleSheet.create({
 
   opcaoTextoUltima: {
     color: "#ffffff",
-    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
-    paddingVertical: 10, // <-- MODIFICADO
+    fontSize: isTablet ? 18 : 16,
+    paddingVertical: 10,
     paddingHorizontal: 5,
   },
 
   botao: {
     backgroundColor: "#0B49C1",
-    paddingVertical: isTablet ? 18 : 14, // <-- MODIFICADO
+    paddingVertical: isTablet ? 18 : 14,
     paddingHorizontal: 24,
     borderRadius: 16,
     alignItems: "center",
@@ -431,7 +430,7 @@ const styles = StyleSheet.create({
 
   botaoTexto: {
     color: "#fff",
-    fontSize: isTablet ? 24 : 22, // <-- MODIFICADO
+    fontSize: isTablet ? 24 : 22,
     fontWeight: "bold",
   },
 
@@ -444,16 +443,16 @@ const styles = StyleSheet.create({
 
   modalBox: {
     backgroundColor: "#1c2337",
-    padding: isTablet ? 30 : 20, // <-- MODIFICADO
+    padding: isTablet ? 30 : 20,
     borderRadius: 16,
-    width: isTablet ? "60%" : "90%", // <-- MODIFICADO
-    maxWidth: 600, // <-- ADICIONADO
+    width: isTablet ? "60%" : "90%",
+    maxWidth: 600,
   },
 
   modalTitulo: {
     color: "#fff",
-    fontSize: isTablet ? 24 : 20, // <-- MODIFICADO
-    marginBottom: 20, // <-- MODIFICADO
+    fontSize: isTablet ? 24 : 20,
+    marginBottom: 20,
     textAlign: "center",
     fontWeight: "bold",
   },
@@ -485,7 +484,7 @@ const styles = StyleSheet.create({
 
   botaoModalTexto: {
     color: "#fff",
-    fontSize: isTablet ? 18 : 16, // <-- MODIFICADO
+    fontSize: isTablet ? 18 : 16,
     fontWeight: "bold",
   },
 });

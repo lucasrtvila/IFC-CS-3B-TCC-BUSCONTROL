@@ -80,7 +80,7 @@ export function ParadasProvider({ children }) {
 
   const adicionarParadaAAluno = async (alunoId, paradaId, horario) => {
     try {
-      // Encontre o aluno e a parada para obter as informações necessárias
+      // Encontra o aluno e a parada para obter as informações necessárias
       const aluno = alunos.find(a => a.id === alunoId);
       const parada = paradas.find(p => p.id === paradaId);
       

@@ -8,7 +8,7 @@ import {
   Modal,
   Image,
   TextInput,
-  Alert, // Garante que o Alert está importado
+  Alert,
   Platform,
   FlatList,
   SafeAreaView,
@@ -64,7 +64,6 @@ export default function NovaViagemScreen({ navigation }) {
 
   const [lastTripData, setLastTripData] = useState(null); 
 
-  // Etapa 1: Busca os dados da viagem UMA VEZ quando a tela montar
   useEffect(() => {
     const buscarUltimaViagem = async () => {
       try {
@@ -72,7 +71,7 @@ export default function NovaViagemScreen({ navigation }) {
         if (viagens && viagens.length > 0) {
           let ultimaViagemConsiderada = viagens[0];
 
-          // CORREÇÃO: Verifica se 'destino' existe antes de acessar '.startsWith'
+          // Verifica se o destino existe e se é uma viagem de volta
           if (ultimaViagemConsiderada && 
               ultimaViagemConsiderada.destino && 
               ultimaViagemConsiderada.destino.startsWith("Volta de ") && 
@@ -89,19 +88,13 @@ export default function NovaViagemScreen({ navigation }) {
     };
 
     buscarUltimaViagem();
-  }, []); // Array vazio, executa apenas na montagem
+  }, []); 
 
-  // Etapa 2: Reage à chegada dos dados da viagem E da lista de veículos
   useEffect(() => {
-    if (!lastTripData) return; // Se não há dados da viagem (ex: BD vazio), não faz nada
-
-    // Define o destino, mas só se o usuário ainda não digitou nada
-    // CORREÇÃO: Verifica se 'destino' existe no objeto
+    if (!lastTripData) return; 
     if (lastTripData.destino && !lastTripData.destino.startsWith("Volta de ")) {
         setDestino(prevDestino => (prevDestino.trim() === "" ? lastTripData.destino : prevDestino));
     }
-
-    // Define o veículo, mas só se o usuário ainda não selecionou um
     const ultimoVeiculoId = lastTripData.veiculoId;
     if (ultimoVeiculoId) {
         const ultimoVeiculo = veiculos.find(v => v.id === ultimoVeiculoId);
@@ -110,8 +103,7 @@ export default function NovaViagemScreen({ navigation }) {
         }
     }
     
-  }, [lastTripData, veiculos]); // Depende dos dados da viagem E da lista de veículos
-
+  }, [lastTripData, veiculos]); 
 
   const onChangeInicio = (event, selectedDate) => {
     setShowInicioPicker(Platform.OS === "ios");
@@ -136,7 +128,6 @@ export default function NovaViagemScreen({ navigation }) {
     );
   };
 
-  // --- MODIFICAÇÃO: Validação em Etapas ---
   const iniciarViagem = () => {
     // 1. Verifica o Destino
     if (!destino.trim()) {
@@ -144,29 +135,24 @@ export default function NovaViagemScreen({ navigation }) {
             "Campo Faltando",
             "Por favor, preencha o destino da viagem."
         );
-        return; // Para aqui
+        return; 
     }
-
-    // 2. Verifica o Veículo
     if (!veiculoSelecionado) {
         Alert.alert(
             "Campo Faltando",
             "Por favor, selecione o veículo."
         );
-        return; // Para aqui
+        return;
     }
 
-    // 3. Verifica os Alunos
     if (alunosSelecionados.length === 0) {
         Alert.alert(
             "Campo Faltando",
             "Por favor, selecione pelo menos um aluno presente."
         );
-        return; // Para aqui
+        return;
     }
-    // --- FIM MODIFICAÇÃO ---
-
-    // Se passou por todas as validações, continua...
+    
     limparTemplate();
 
     const paradasDaViagemComAlunos = paradas
@@ -181,7 +167,6 @@ export default function NovaViagemScreen({ navigation }) {
 
     const horarioFinalFormatado = formatarHorario(final);
 
-    // Se tudo estiver OK, esta linha DEVE navegar
     navigation.navigate("ViagemAtiva", {
       destino,
       horarioFinal: horarioFinalFormatado,
@@ -191,7 +176,6 @@ export default function NovaViagemScreen({ navigation }) {
       alunosSelecionadosIds: alunosSelecionados.map(a => a.id),
     });
   };
-  // --- FIM ---
 
   const renderAlunoItem = ({ item }) => {
     const isSelected = alunosSelecionados.find((a) => a.id === item.id);
@@ -208,7 +192,7 @@ export default function NovaViagemScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.container}>
             <Header style={styles.header} navigation={navigation} />
             <Texto style={styles.titulo}>Nova viagem</Texto>
@@ -381,14 +365,14 @@ export default function NovaViagemScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-      </SafeAreaView>
+      </View>
 
        <Modal
         visible={modalAlunosVisivel}
         animationType="slide"
         transparent
       >
-        <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalSafeArea}>
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Alunos Presentes</Texto>
                 <FlatList
@@ -405,7 +389,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Concluir</Texto>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       <Modal
@@ -413,7 +397,7 @@ export default function NovaViagemScreen({ navigation }) {
         animationType="slide"
         transparent
       >
-        <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalSafeArea}>
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Selecionar Veículo</Texto>
                 <FlatList
@@ -442,7 +426,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Concluir</Texto>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
       </Modal>
     </>
   );

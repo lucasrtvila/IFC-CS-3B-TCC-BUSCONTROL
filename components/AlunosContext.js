@@ -8,29 +8,31 @@ import {
   deleteAluno,
   getParadas,
   getAlunosComStatusParaMes,
-  getMensalidade, // Importar
-  salvarMensalidade, // Importar
+  getMensalidade,
+  salvarMensalidade,
 } from "../database/database";
 import { Alert } from "react-native";
 
 export const AlunosContext = createContext();
 
-// Converte string YYYY-MM-DD para objeto Date (mantida)
+// Converte string YYYY-MM-DD para objeto Date
 function parseDataISO(dataString) {
-    if (!dataString || typeof dataString !== 'string') return new Date(); // Retorna data atual se inválido
+    if (!dataString || typeof dataString !== 'string') return new Date();
     const parts = dataString.split('-');
     if (parts.length === 3) {
-      // Cria a data em UTC para evitar problemas de fuso horário apenas na conversão
-      return new Date(Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
+      const ano = parseInt(parts[0], 10);
+      const mes = parseInt(parts[1], 10) - 1; // 0-index
+      const dia = parseInt(parts[2], 10);
+      return new Date(ano, mes, dia);
     }
     return new Date(); // Retorna data atual se inválido
 }
-// Formata objeto Date para string "YYYY-MM-DD" (mantida)
+// Formata objeto Date para string "YYYY-MM-DD" 
 function formatarDataISO(data) {
     if (!data) return null;
-    const dia = data.getUTCDate().toString().padStart(2, '0');
-    const mes = (data.getUTCMonth() + 1).toString().padStart(2, '0'); // Mês é 0-indexado
-    const ano = data.getUTCFullYear();
+    const dia = data.getDate().toString().padStart(2, '0');
+    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+    const ano = data.getFullYear();
     return `${ano}-${mes}-${dia}`;
 }
 
@@ -39,7 +41,7 @@ const getMesAnoDeFaturamentoAtual = (diaVencimento) => {
     const hoje = new Date();
     const diaDeHoje = hoje.getDate();
     const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth(); // 0-indexado
+    const mesAtual = hoje.getMonth(); 
 
     if (diaDeHoje <= diaVencimento) {
         return `${anoAtual}-${(mesAtual + 1).toString().padStart(2, '0')}`;
@@ -77,8 +79,6 @@ export function AlunosProvider({ children }) {
   const carregarDadosIniciais = async () => {
     try {
       await initDB();
-
-      // --- CARREGAR CONFIG MENSALIDADE ---
       const config = await getMensalidade();
       let diaVencimento = 20;
       if (config) {
@@ -86,23 +86,21 @@ export function AlunosProvider({ children }) {
         const dataVencObj = parseDataISO(config.dataVencimento);
         if (dataVencObj) {
             setDataVencimento(dataVencObj); // Define a data do estado
-            diaVencimento = dataVencObj.getUTCDate(); // Pega o dia (UTC)
+            diaVencimento = dataVencObj.getDate(); // Pega o dia
         } else {
-             setDataVencimento(new Date()); // Fallback
+             setDataVencimento(new Date());
         }
       } else {
-          // Define valores padrão se não houver config
           setValorMensalidade("380.00");
           setDataVencimento(new Date());
       }
       setDiaVencimentoAtual(diaVencimento);
-      // --- FIM CARREGAR CONFIG ---
 
       const mesAnoFaturamento = getMesAnoDeFaturamentoAtual(diaVencimento);
       setMesAnoVisivel(mesAnoFaturamento);
 
       await carregarParadas();
-      await carregarAlunosBase(); // Carrega a lista base de alunos
+      await carregarAlunosBase();
 
     } catch (error) {
       console.log("❌ Erro na inicialização completa:", error);
@@ -111,8 +109,8 @@ export function AlunosProvider({ children }) {
 
    const carregarAlunosBase = async () => {
     try {
-        const data = await getAlunos(); // getAlunos agora só retorna alunos ativos
-        setAlunos(data); // Atualiza a lista base 'alunos'
+        const data = await getAlunos();
+        setAlunos(data);
     } catch (error) {
         console.log("❌ Erro ao carregar alunos base:", error);
     }
@@ -121,9 +119,8 @@ export function AlunosProvider({ children }) {
     const carregarStatusAlunosDoMes = async (mesAno) => {
         if (!mesAno) return;
         try {
-            // Busca os alunos já com o status para o mês específico (AGORA COM A NOVA LÓGICA)
             const data = await getAlunosComStatusParaMes(mesAno);
-            setAlunosComStatus(data); // Atualiza a lista de exibição
+            setAlunosComStatus(data);
         } catch (error) {
             console.log(`❌ Erro ao carregar status dos alunos para ${mesAno}:`, error);
         }
@@ -139,7 +136,6 @@ export function AlunosProvider({ children }) {
     }
   };
 
-  // --- FUNÇÃO ATUALIZADA ---
   const adicionarAlunoContext = async (nome, cpf, status, ultimoPagamento, telefone, paradaId) => {
     if (!nome.trim()) {
        Alert.alert("Erro", "O nome do aluno é obrigatório.");
@@ -156,8 +152,7 @@ export function AlunosProvider({ children }) {
     }
    
     try {
-      // --- ATUALIZADO: Adiciona data de cadastro ---
-      const dataCadastroISO = new Date().toISOString().split('T')[0]; // Formato 'YYYY-MM-DD'
+      const dataCadastroISO = new Date().toISOString().split('T')[0];
       
       await addAluno(
           nome.trim(), 
@@ -168,8 +163,7 @@ export function AlunosProvider({ children }) {
           paradaId, 
           dataCadastroISO // Passa a data de cadastro
       );
-      // --- FIM DA ATUALIZAÇÃO ---
-      
+
       await carregarAlunosBase(); // Recarrega a lista base
        Alert.alert("Sucesso", "Aluno adicionado!");
 
@@ -178,7 +172,7 @@ export function AlunosProvider({ children }) {
        Alert.alert("Erro no Cadastro", "Não foi possível adicionar o aluno. Verifique os logs.");
     }
   };
-  // --- FIM DA ATUALIZAÇÃO ---
+
 
 
   const editarAlunoContext = async (index, novoNome, novoCPF, novoStatus, novoTelefone, novoParadaId) => {
@@ -211,9 +205,6 @@ export function AlunosProvider({ children }) {
       const horarioParada = paradaSelecionada ? paradaSelecionada.horario : null;
 
       const alunoBase = alunos.find(a => a.id === alunoParaEditar.id);
-      // Se o alunoBase não for encontrado (ex: aluno inativo sendo editado em mês passado), 
-      // precisamos buscar o ultimoPagamento de outra forma, mas para a lógica atual, 
-      // só alunos ativos (presentes em 'alunos') devem ser editáveis.
       const ultimoPagamento = (alunoBase ? alunoBase.ultimoPagamento : "") || "";
 
 
@@ -250,11 +241,8 @@ export function AlunosProvider({ children }) {
       }
   };
 
-  // ****************************************************
-  // AQUI ESTÁ A MUDANÇA (1/2)
-  // Esta função agora executa um "soft delete" (statusAtivo = 0)
-  const removerAlunoContext = (alunoId) => { // Alterado de 'index' para 'alunoId'
-     const alunoParaRemover = alunosComStatus.find(a => a.id === alunoId); // Encontra o aluno pelo ID
+  const removerAlunoContext = (alunoId) => {
+     const alunoParaRemover = alunosComStatus.find(a => a.id === alunoId);
      if (!alunoParaRemover) {
         console.error("Aluno não encontrado para remoção com ID:", alunoId);
         Alert.alert("Erro", "Aluno não encontrado para remoção.");
@@ -268,9 +256,8 @@ export function AlunosProvider({ children }) {
          style: "destructive",
         onPress: async () => {
           try {
-            await deleteAluno(alunoParaRemover.id); // Agora faz UPDATE statusAtivo = 0
-            await carregarAlunosBase(); // Recarrega a lista base (que só pega ativos)
-            // O useEffect [mesAnoVisivel, alunos] recarregará 'alunosComStatus' automaticamente
+            await deleteAluno(alunoParaRemover.id);
+            await carregarAlunosBase(); 
           } catch (e) {
             console.log("Erro ao remover aluno (Context):", e);
             Alert.alert("Erro", "Não foi possível remover o aluno.");
@@ -279,10 +266,6 @@ export function AlunosProvider({ children }) {
       },
     ]);
   };
-  // FIM DA MUDANÇA (1/2)
-  // ****************************************************
-
-
    const mesAnterior = () => {
        setMesAnoVisivel(prevMesAno => {
            if (!prevMesAno) return null;
@@ -314,37 +297,43 @@ export function AlunosProvider({ children }) {
     };
 
     const atualizarConfigMensalidade = async (novoValor, novaDataVencimentoObj) => {
-        const valorFloat = parseFloat(novoValor);
-        const dataFormatadaISO = formatarDataISO(novaDataVencimentoObj); 
+    const valorFloat = parseFloat(novoValor);
 
-        if (isNaN(valorFloat) || valorFloat <= 0) {
-            Alert.alert("Valor Inválido", "Insira um valor numérico positivo.");
-            return false; 
-        }
-        if (!dataFormatadaISO) {
-             Alert.alert("Data Inválida", "Selecione uma data de vencimento válida.");
-            return false; 
+    if (isNaN(valorFloat) || valorFloat <= 0) {
+        Alert.alert("Valor Inválido", "Insira um valor numérico positivo.");
+        return false;
+    }
+    if (!novaDataVencimentoObj || !(novaDataVencimentoObj instanceof Date)) {
+        Alert.alert("Data Inválida", "Selecione uma data de vencimento válida.");
+        return false;
+    }
+
+    const ano = novaDataVencimentoObj.getFullYear();
+    const mes = novaDataVencimentoObj.getMonth() + 1;
+    const dia = novaDataVencimentoObj.getDate();
+
+    const dataFormatadaISO = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
+    try {
+        await salvarMensalidade(valorFloat, dataFormatadaISO);
+        setValorMensalidade(valorFloat.toFixed(2).toString());
+        setDataVencimento(new Date(ano, mes - 1, dia));
+        setDiaVencimentoAtual(dia);
+
+        const novoMesAnoFaturamento = getMesAnoDeFaturamentoAtual(dia);
+        if (novoMesAnoFaturamento !== mesAnoVisivel) {
+            setMesAnoVisivel(novoMesAnoFaturamento);
+        } else {
+            await carregarStatusAlunosDoMes(mesAnoVisivel);
         }
 
-        try {
-            await salvarMensalidade(valorFloat, dataFormatadaISO); 
-            setValorMensalidade(valorFloat.toString());
-            setDataVencimento(novaDataVencimentoObj);
-            setDiaVencimentoAtual(novaDataVencimentoObj.getUTCDate()); 
-            const novoMesAnoFaturamento = getMesAnoDeFaturamentoAtual(novaDataVencimentoObj.getUTCDate());
-            if (novoMesAnoFaturamento !== mesAnoVisivel) {
-                setMesAnoVisivel(novoMesAnoFaturamento);
-            } else {
-                 await carregarStatusAlunosDoMes(mesAnoVisivel); 
-            }
-
-            console.log("Configuração de mensalidade atualizada no contexto e DB.");
-            return true; 
-        } catch (error) {
-            console.error("Erro ao atualizar configuração de mensalidade (Context):", error);
-            Alert.alert("Erro", "Não foi possível salvar as configurações.");
-            return false; 
-        }
+        console.log("Configuração de mensalidade atualizada no contexto e DB.");
+        return true;
+    } catch (error) {
+        console.error("Erro ao atualizar configuração de mensalidade (Context):", error);
+        Alert.alert("Erro", "Não foi possível salvar as configurações.");
+        return false;
+    }
     };
 
 
@@ -352,7 +341,7 @@ export function AlunosProvider({ children }) {
     <AlunosContext.Provider
       value={{
           alunos: alunosComStatus, 
-          alunosBase: alunos, // <--- EXPOR A LISTA BASE
+          alunosBase: alunos,
           adicionarAluno: adicionarAlunoContext,
           editarAluno: editarAlunoContext,
           removerAluno: removerAlunoContext,

@@ -1,25 +1,21 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, use } from "react";
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert, // Mantido caso necessário em outros lugares
-  // TextInput removido
-  // Modal removido
+  Alert, // Mantido caso necessário
   Dimensions,
   StatusBar,
   Platform, // Mantido caso necessário
 } from "react-native";
 import * as Location from "expo-location";
-// DateTimePicker removido
-
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
 import { ViagemContext } from "../components/ViagemContext";
+import { AlunosContext } from "../components/AlunosContext";
 
-import { getUsuario, getMensalidade } from "../database/database"; // Remover salvarMensalidade daqui
-
+import { getUsuario, getMensalidade } from "../database/database";
 import Texto from "../components/Texto";
 import BarraNavegacao from "../components/BarraNavegacao";
 import Header from "../components/Header";
@@ -38,7 +34,6 @@ export default function Inicial({ navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [localizacao, setLocalizacao] = useState("Buscando...");
   const [saudacao, setSaudacao] = useState("");
-  // Estado apenas para exibir o valor carregado
   const [valorMensalidadeExibido, setValorMensalidadeExibido] = useState("0");
   const [dataVencimentoExibida, setDataVencimentoExibida] = useState(new Date());
 
@@ -46,6 +41,7 @@ export default function Inicial({ navigation }) {
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
   const { viagemDeVoltaPendente } = useContext(ViagemContext);
+  const {valorMensalidade, dataVencimento} = useContext(AlunosContext);
 
   useEffect(() => {
     const hora = new Date().getHours();
@@ -63,13 +59,11 @@ export default function Inicial({ navigation }) {
         const mensalidadeBanco = await getMensalidade();
         if (mensalidadeBanco) {
           setValorMensalidadeExibido(mensalidadeBanco.valor.toFixed(2));
-          // Convertendo a string YYYY-MM-DD para Date para exibição
           const parts = mensalidadeBanco.dataVencimento.split('-');
           if (parts.length === 3) {
-              // Mês é 0-indexado no construtor Date
               setDataVencimentoExibida(new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
           } else {
-               setDataVencimentoExibida(new Date()); // Fallback
+               setDataVencimentoExibida(new Date());
           }
         } else {
             setValorMensalidadeExibido("380.00"); // Valor padrão
@@ -81,6 +75,18 @@ export default function Inicial({ navigation }) {
     }
     carregarDados();
   }, []);
+
+  useEffect(() => {
+    if (valorMensalidade != null) {
+      setValorMensalidadeExibido(parseFloat(valorMensalidade).toFixed(2));
+    }
+  }, [valorMensalidade]);
+
+  useEffect(() => {
+    if (dataVencimento) {
+      setDataVencimentoExibida(new Date(dataVencimento));
+    }
+  }, [dataVencimento]);
 
   useEffect(() => {
     const obterLocalizacao = async () => {
@@ -110,7 +116,7 @@ export default function Inicial({ navigation }) {
   }, []);
 
    const navegarParaMensalidades = () => {
-      navigation.navigate("Mensalidades"); // Navega para a nova tela
+      navigation.navigate("Mensalidades");
    };
 
 
@@ -143,7 +149,7 @@ export default function Inicial({ navigation }) {
 
             <TouchableOpacity
               style={styles.card}
-              onPress={navegarParaMensalidades} // Alterar aqui
+              onPress={navegarParaMensalidades}
             >
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
@@ -218,7 +224,6 @@ export default function Inicial({ navigation }) {
           </TouchableOpacity>
         </View>
 
-         {/* Modal removido */}
 
         <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
       </View>
@@ -321,24 +326,24 @@ const styles = StyleSheet.create({
       fontSize: width > 768 ? 24 : 20,
       fontWeight: "bold",
     },
-     modalButtons: { // Mantido caso precise de modais em outros lugares, mas pode ser removido se não
+     modalButtons: {
       flexDirection: "row",
       marginTop: 20,
       gap: 10,
     },
-    modalButton: { // Mantido caso precise de modais em outros lugares
+    modalButton: { 
       flex: 1,
       paddingVertical: 16,
       borderRadius: 16,
       alignItems: "center",
     },
-    saveButton: { // Mantido caso precise de modais em outros lugares
+    saveButton: { 
       backgroundColor: "#0B49C1",
     },
-    cancelButton: { // Mantido caso precise de modais em outros lugares
+    cancelButton: { 
       backgroundColor: "#373e4f",
     },
-    modalButtonText: { // Mantido caso precise de modais em outros lugares
+    modalButtonText: { 
       color: "white",
       fontSize: 18,
       fontWeight: "bold",

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-// Importe o CardStyleInterpolators
 import {
   createStackNavigator,
   CardStyleInterpolators,
@@ -33,16 +32,12 @@ import {
   initDB,
   migrateDatabase,
   getUsuario,
-  // --- ATUALIZADO: Importações para Regra 3 ---
   getMensalidade,
   salvarMensalidade,
   calcularProximoVencimento,
-  // --- FIM DA ATUALIZAÇÃO ---
 } from "./database/database";
 
 const Stack = createStackNavigator();
-
-// --- ATUALIZADO (1/3): Função helper copiada do AlunosContext ---
 function parseDataISO(dataString) {
     if (!dataString || typeof dataString !== 'string') return null;
     const parts = dataString.split('-');
@@ -52,8 +47,6 @@ function parseDataISO(dataString) {
     }
     return null;
 }
-
-// --- ATUALIZADO (2/3): Lógica da Regra 3 (Renovação Automática) ---
 async function verificarEAtualizarVencimento() {
   console.log("Verificando data de vencimento...");
   try {
@@ -61,16 +54,12 @@ async function verificarEAtualizarVencimento() {
     if (config && config.dataVencimento) {
       const dataVencObj = parseDataISO(config.dataVencimento);
       const hoje = new Date();
-      
-      // Ajusta 'hoje' para o início do dia (meia-noite) para comparação
+  
       hoje.setHours(0, 0, 0, 0);
 
-      // Se a data de vencimento armazenada (em UTC) for anterior a hoje
       if (dataVencObj && dataVencObj < hoje) {
         console.log(`Data de vencimento antiga (${config.dataVencimento}) ultrapassada.`);
-        // Calcula a próxima data de vencimento
         const proximoVencimentoISO = calcularProximoVencimento(config.dataVencimento);
-        // Salva a nova data no banco
         await salvarMensalidade(config.valor, proximoVencimentoISO);
         console.log(`✅ Data de vencimento atualizada para: ${proximoVencimentoISO}`);
       } else {
@@ -83,7 +72,6 @@ async function verificarEAtualizarVencimento() {
     console.error("Erro ao verificar/atualizar data de vencimento:", error);
   }
 }
-// --- FIM DA ATUALIZAÇÃO ---
 
 
 export default function App() {
@@ -95,9 +83,7 @@ export default function App() {
       try {
         await initDB();
         await migrateDatabase();
-        // --- ATUALIZADO (3/3): Chama a verificação de vencimento ---
         await verificarEAtualizarVencimento();
-        // --- FIM DA ATUALIZAÇÃO ---
         const usuario = await getUsuario();
         setInitialRoute(usuario ? "Inicial" : "Cadastro");
         setDbReady(true);
@@ -126,10 +112,8 @@ export default function App() {
               <NavigationContainer>
                 <Stack.Navigator
                   initialRouteName={initialRoute}
-                  // Adicione screenOptions aqui
                   screenOptions={{
                     headerShown: false,
-                    // Define a animação de transição para todas as telas
                     cardStyleInterpolator:
                       CardStyleInterpolators.forHorizontalIOS,
                   }}

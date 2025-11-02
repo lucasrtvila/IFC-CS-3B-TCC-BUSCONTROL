@@ -1,5 +1,4 @@
 import { View, TouchableOpacity, Image, StyleSheet, Dimensions } from "react-native";
-import Texto from "./Texto";
 
 const { width } = Dimensions.get("window");
 
@@ -11,7 +10,7 @@ export default function Header({ navigation, style }) {
         onPress={() => navigation.navigate("HistoricoViagens")}
       >
         <Image
-          source={require("../assets/historico.png")} // Certifique-se de ter este ícone
+          source={require("../assets/historico.png")}
           style={styles.historyIcon}
         />
       </TouchableOpacity>

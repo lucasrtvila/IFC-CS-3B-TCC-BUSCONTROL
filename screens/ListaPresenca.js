@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Dimensions,
   StatusBar,
-  SectionList, // Alterado de FlatList para SectionList
+  SectionList,
   Alert,
   Image,
 } from "react-native";
@@ -20,22 +20,20 @@ const { width } = Dimensions.get("window");
 
 export default function ListaPresencaScreen({ navigation }) {
   const { viagemTemplate, limparTemplate } = useContext(ViagemContext);
-  const { alunos: todosAlunos } = useContext(AlunosContext); // Pega todos os alunos
+  const { alunos: todosAlunos } = useContext(AlunosContext);
   const { paradas } = useContext(ParadasContext);
 
-  // Memoiza os IDs dos alunos que foram na ida
   const alunosDaIdaIds = useMemo(
-    () => new Set(viagemTemplate?.alunosSelecionadosIds || []), // Usa os IDs salvos no template
+    () => new Set(viagemTemplate?.alunosSelecionadosIds || []),
     [viagemTemplate]
   );
 
-  // Separa os alunos em duas seções: os que foram na ida e os outros
   const secoesDeAlunos = useMemo(() => {
     const alunosQueForam = [];
     const outrosAlunos = [];
 
     todosAlunos.forEach(aluno => {
-      if (alunosDaIdaIds.has(aluno.id)) { // Separa baseado nos IDs da ida
+      if (alunosDaIdaIds.has(aluno.id)) {
         alunosQueForam.push(aluno);
       } else {
         outrosAlunos.push(aluno);
@@ -47,10 +45,10 @@ export default function ListaPresencaScreen({ navigation }) {
 
     const sections = [];
     if (alunosQueForam.length > 0) {
-        sections.push({ title: "Alunos da Ida", data: alunosQueForam }); // Seção 1
+        sections.push({ title: "Alunos da Ida", data: alunosQueForam });
     }
     if (outrosAlunos.length > 0) {
-        sections.push({ title: "Outros Alunos", data: outrosAlunos }); // Seção 2
+        sections.push({ title: "Outros Alunos", data: outrosAlunos });
     }
      if (sections.length === 0) {
          sections.push({ title: "Nenhum Aluno Cadastrado", data: [] });
@@ -59,7 +57,6 @@ export default function ListaPresencaScreen({ navigation }) {
     return sections;
   }, [todosAlunos, alunosDaIdaIds]);
 
-  // Estado para alunos selecionados para a volta
   const [alunosPresentesParaVolta, setAlunosPresentesParaVolta] = useState(() => new Set());
 
   const togglePresenca = (alunoId) => {
@@ -81,7 +78,6 @@ export default function ListaPresencaScreen({ navigation }) {
       return;
     }
 
-    // Filtra TODOS os alunos baseado na seleção atual
     const alunosQueVoltam = todosAlunos.filter((aluno) =>
       alunosPresentesParaVolta.has(aluno.id)
     );
@@ -91,43 +87,63 @@ export default function ListaPresencaScreen({ navigation }) {
       return;
     }
 
-    try {
-      const nomesAlunosVolta = alunosQueVoltam.map(a => a.nome);
-      // Atualiza o registro original da viagem de ida com os alunos da volta
-      await updateViagemVolta(viagemTemplate.historicoId, nomesAlunosVolta);
-      console.log("Histórico atualizado com alunos da volta:", nomesAlunosVolta);
-    } catch (error) {
-      console.error("Erro ao atualizar histórico com alunos da volta:", error);
-      Alert.alert("Erro", "Não foi possível atualizar o histórico da viagem.");
-    }
+    // Verifica quantos dos que foram na ida não foram selecionados para volta
+    const idsQueForamNaIda = Array.from(alunosDaIdaIds);
+    const faltantesIds = idsQueForamNaIda.filter(id => !alunosPresentesParaVolta.has(id));
+    const faltantesCount = faltantesIds.length;
 
-     const paradasDaViagemComAlunosVolta = paradas
-       .map((parada) => ({
-         ...parada,
-         alunos: alunosQueVoltam.filter( // Filtra alunos que voltam por parada
-           (aluno) => aluno.paradaId === parada.id
-         ),
-       }))
-       .filter((parada) => parada.alunos.length > 0)
-       .sort((a, b) => (b.horario || "").localeCompare(a.horario || "")); // Ordena decrescente
+    const mensagem = faltantesCount > 0
+      ? `Atenção: ${faltantesCount} ${faltantesCount === 1 ? 'aluno que foi na ida não embarcou' : 'alunos que foram na ida não embarcaram'}.\nDeseja continuar mesmo assim?`
+      : "Iniciar viagem de volta?";
 
+    Alert.alert(
+      "Confirmar Viagem",
+      mensagem,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            try {
+              const nomesAlunosVolta = alunosQueVoltam.map(a => a.nome);
+              // Atualiza o registro original da viagem de ida com os alunos da volta
+              await updateViagemVolta(viagemTemplate.historicoId, nomesAlunosVolta);
+              console.log("Histórico atualizado com alunos da volta:", nomesAlunosVolta);
+            } catch (error) {
+              console.error("Erro ao atualizar histórico com alunos da volta:", error);
+              Alert.alert("Erro", "Não foi possível atualizar o histórico da viagem.");
+              return;
+            }
 
-    const destinoVolta = `Volta de ${viagemTemplate.destino}`;
-    const historicoIdOriginal = viagemTemplate.historicoId; // Pega o ID original
+            const paradasDaViagemComAlunosVolta = paradas
+              .map((parada) => ({
+                ...parada,
+                alunos: alunosQueVoltam.filter(
+                  (aluno) => aluno.paradaId === parada.id
+                ),
+              }))
+              .filter((parada) => parada.alunos.length > 0)
+              .sort((a, b) => (b.horario || "").localeCompare(a.horario || ""));
 
-    limparTemplate(); // Limpa o template antes de navegar
+            const destinoVolta = `Volta de ${viagemTemplate.destino}`;
+            const historicoIdOriginal = viagemTemplate.historicoId; // Pega o ID original
 
-    navigation.navigate("ViagemAtiva", {
-      destino: destinoVolta,
-      horarioFinal: "N/A",
-      paradasDaViagem: paradasDaViagemComAlunosVolta,
-      veiculoId: viagemTemplate.veiculoId,
-      tipoViagem: "volta", // Define o tipo como volta
-      alunosSelecionadosIds: alunosQueVoltam.map(a => a.id), // Passa IDs de quem volta
-      historicoIdOriginal: historicoIdOriginal, // Passa o ID original para ViagemAtiva
-    });
+            limparTemplate();
+
+            navigation.navigate("ViagemAtiva", {
+              destino: destinoVolta,
+              horarioFinal: "N/A",
+              paradasDaViagem: paradasDaViagemComAlunosVolta,
+              veiculoId: viagemTemplate.veiculoId,
+              tipoViagem: "volta",
+              alunosSelecionadosIds: alunosQueVoltam.map(a => a.id),
+              historicoIdOriginal: historicoIdOriginal,
+            });
+          }
+        }
+      ]
+    );
   };
-
   const renderAlunoItem = ({ item }) => {
     const isPresente = alunosPresentesParaVolta.has(item.id);
     const estavaNaIda = alunosDaIdaIds.has(item.id);
@@ -209,7 +225,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 20,
   },
-  sectionHeader: { // Estilo para o cabeçalho da seção
+  sectionHeader: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#AAB1C4",
@@ -235,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0B49C1",
     borderLeftColor: 'limegreen',
   },
-  alunoNaoEstavaNaIda: { // Estilo para alunos que não foram na ida
+  alunoNaoEstavaNaIda: {
      opacity: 0.8,
   },
   alunoItemText: {

@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
   TextInput,
-  Modal, // Importa Modal
+  Modal,
   Platform,
 } from "react-native";
 import Texto from "../components/Texto";
@@ -129,7 +129,6 @@ export default function ConfiguracoesScreen({ navigation }) {
             activeOpacity={1} 
             onPressOut={() => setModalNomeVisivel(false)}
         >
-            {/* TouchableOpacity interno para evitar fechar ao clicar no modalBox */}
             <TouchableOpacity style={styles.modalBox} activeOpacity={1} onPress={() => {}}> 
                 <Image 
                     source={require('../assets/configuracoes.png')}
@@ -153,8 +152,7 @@ export default function ConfiguracoesScreen({ navigation }) {
                         <Texto style={styles.botaoTextoModal}>Salvar</Texto>
                     </TouchableOpacity>
                 </View>
-            </TouchableOpacity> 
-            {/* --- ESTA É A TAG DE FECHAMENTO QUE FALTAVA --- */}
+            </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -231,17 +229,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
-  botaoTexto: { // Texto para botões grandes da tela
+  botaoTexto: { 
     color: "white",
     fontSize: width > 768 ? 22 : 18,
     fontWeight: "bold",
   },
-  botaoTextoModal: { // Texto menor para botões do modal
+  botaoTextoModal: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
-  // --- Estilos do Modal ---
    modalFundo: {
         flex: 1,
         justifyContent: 'center',

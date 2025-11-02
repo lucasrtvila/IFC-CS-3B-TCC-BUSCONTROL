@@ -15,20 +15,16 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Texto from "../components/Texto";
 import { AlunosContext } from "../components/AlunosContext";
-// Remover import de salvarMensalidade e getMensalidade daqui
-// import { salvarMensalidade, getMensalidade } from "../database/database";
 
 const { width } = Dimensions.get("window");
 
-// Funções formatarData, formatarDataISO, parseDataISO (mantidas)
 function formatarData(data) {
     if (!data) return "Selecione a data";
-    const dia = data.getDate().toString().padStart(2, "0"); // MUDANÇA
-    const mes = (data.getMonth() + 1).toString().padStart(2, "0"); // MUDANÇA
-    const ano = data.getFullYear(); // MUDANÇA
+    const dia = data.getDate().toString().padStart(2, "0");
+    const mes = (data.getMonth() + 1).toString().padStart(2, "0");
+    const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
 }
-// Manter formatarDataISO e parseDataISO como estão no AlunosContext.js se precisar usá-las aqui
 
 const formatarMesAnoDisplay = (mesAnoString) => {
     if (!mesAnoString) return "";
@@ -39,7 +35,7 @@ const formatarMesAnoDisplay = (mesAnoString) => {
 
 
 export default function MensalidadesScreen({ navigation }) {
-  // --- USAR VALORES DO CONTEXTO ---
+
   const {
       alunos,
       updateAlunoStatus,
@@ -48,15 +44,14 @@ export default function MensalidadesScreen({ navigation }) {
       mesAnterior,
       proximoMes,
       isProximoMesFuturo,
-      valorMensalidade: valorMensalidadeContext, // Renomear para evitar conflito
-      dataVencimento: dataVencimentoContext, // Renomear
-      atualizarConfigMensalidade // Função para salvar e atualizar contexto
+      valorMensalidade: valorMensalidadeContext,
+      dataVencimento: dataVencimentoContext,
+      atualizarConfigMensalidade
   } = useContext(AlunosContext);
 
-  // --- ESTADOS LOCAIS APENAS PARA O MODAL DE CONFIG ---
+
   const [valorModal, setValorModal] = useState("0");
   const [dataModal, setDataModal] = useState(new Date());
-  // --- FIM ESTADOS LOCAIS ---
 
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [totalPago, setTotalPago] = useState(0);
@@ -75,7 +70,7 @@ export default function MensalidadesScreen({ navigation }) {
 
   // Calcula o resumo (usa valorMensalidadeContext)
   useEffect(() => {
-    const valorNum = parseFloat(valorMensalidadeContext) || 0; // Usa valor do contexto
+    const valorNum = parseFloat(valorMensalidadeContext) || 0;
     let pagos = 0;
     alunos.forEach(aluno => {
         if (aluno.status === "Pago") {
@@ -86,37 +81,31 @@ export default function MensalidadesScreen({ navigation }) {
     setTotalPago(pagos);
     setTotalNaoPago(naoPagos);
     setTotalEsperado(alunos.length * valorNum);
-  }, [alunos, valorMensalidadeContext]); // Depende do valor do contexto
+  }, [alunos, valorMensalidadeContext]);
 
-  // --- USAR FUNÇÃO DO CONTEXTO PARA SALVAR ---
   const handleSalvarConfig = async () => {
     // Chama a função do contexto passando os valores do modal
     const sucesso = await atualizarConfigMensalidade(valorModal, dataModal);
     if (sucesso) {
       setModalConfigVisivel(false);
       Alert.alert("Sucesso", "Configurações de mensalidade salvas.");
-      // Não precisa mais recarregar alunos aqui, o contexto faz isso
     }
-    // Alertas de erro são tratados dentro de atualizarConfigMensalidade
   };
-  // --- FIM ---
 
   const handleToggleStatus = async (aluno) => {
       if (!isEditMode) return;
       const novoStatus = aluno.status === "Pago" ? "Não Pago" : "Pago";
       try {
-          // Usa a função do contexto para atualizar o status
           await updateAlunoStatus(aluno.id, novoStatus, mesAnoVisivel);
       } catch (error) {
-          // O AlunosContext já deve mostrar um Alert em caso de erro
           console.error("Erro ao atualizar status (Tela Mensalidades):", error);
       }
   };
 
   const aoSelecionarData = (event, selectedDate) => {
-    const currentDate = selectedDate || dataModal; // Usa a data atual do modal se nada for selecionado
+    const currentDate = selectedDate || dataModal;
     setMostrarDatePicker(Platform.OS === "ios");
-    setDataModal(currentDate); // Atualiza o estado LOCAL do modal
+    setDataModal(currentDate);
   };
 
 
@@ -196,15 +185,14 @@ export default function MensalidadesScreen({ navigation }) {
           data={alunos}
           renderItem={renderAlunoItem}
           keyExtractor={(item) => item.id.toString()}
-          style={styles.listaAlunos} // flex: 1
+          style={styles.listaAlunos}
           ListEmptyComponent={
             <Texto style={styles.textoVazio}>Nenhum aluno cadastrado.</Texto>
           }
-           extraData={alunos} // Garante re-renderização quando 'alunos' (com status) mudar
+           extraData={alunos}
         />
       </View>
 
-      {/* --- MODAL DE RESUMO --- */}
       <Modal
         visible={modalResumoVisivel}
         animationType="fade"
@@ -228,7 +216,6 @@ export default function MensalidadesScreen({ navigation }) {
                 </View>
                 <View style={styles.resumoLinha}>
                     <Texto style={styles.resumoLabel}>Valor Esperado:</Texto>
-                    {/* Usa valorMensalidadeContext para o cálculo, mas exibe valorModal no input */}
                     <Texto style={styles.resumoValor}>R$ {(alunos.length * (parseFloat(valorMensalidadeContext) || 0)).toFixed(2)}</Texto>
                 </View>
                  <TouchableOpacity style={styles.botaoModalFechar} onPress={() => setModalResumoVisivel(false)}>
@@ -262,7 +249,6 @@ export default function MensalidadesScreen({ navigation }) {
                         style={styles.inputConfig}
                         onPress={() => setMostrarDatePicker(true)}
                     >
-                        {/* Exibe a data do estado LOCAL do modal */}
                         <Texto style={styles.dataTexto}>{formatarData(dataModal)}</Texto>
                     </TouchableOpacity>
 
@@ -272,7 +258,7 @@ export default function MensalidadesScreen({ navigation }) {
                         mode="date"
                         display={Platform.OS === "ios" ? "spinner" : "default"}
                         onChange={aoSelecionarData} // Atualiza estado local
-                        minimumDate={new Date()} // Pode ajustar conforme necessário
+                        minimumDate={new Date()}
                         />
                     )}
 
@@ -293,17 +279,15 @@ export default function MensalidadesScreen({ navigation }) {
   );
 }
 
-// Estilos (mantidos como antes, apenas ajuste nomes se necessário)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingTop: 40, // Adicionado paddingTop para compensar remoção do SafeAreaView
+    paddingTop: 40, 
   },
   container: {
     flex: 1,
     paddingHorizontal: 15,
-    // paddingTop removido, já está no safeArea
     paddingBottom: 10,
   },
    headerNav: {
@@ -342,7 +326,7 @@ const styles = StyleSheet.create({
      flex: 1,
      marginHorizontal: 10,
   },
-  // --- Navegação Mês ---
+  // Navegação Mês
    navegacaoMesContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -370,8 +354,6 @@ const styles = StyleSheet.create({
        fontSize: 18,
        fontWeight: 'bold',
    },
-
-  // --- Cabeçalho da Lista ---
   listaHeaderContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -416,7 +398,7 @@ const styles = StyleSheet.create({
       fontStyle: 'italic',
   },
 
-  // --- Lista Alunos ---
+  //Lista Alunos
   listaAlunos: {
     flex: 1,
     marginBottom: 10,
@@ -438,9 +420,6 @@ const styles = StyleSheet.create({
   cardAlunoNaoPago: {
       backgroundColor: "#1c2337",
       borderColor: "orange",
-  },
-  cardAlunoEditavel: {
-      // Pode adicionar um efeito visual sutil aqui se desejar
   },
   nomeAluno: {
     color: "white",
@@ -465,7 +444,7 @@ const styles = StyleSheet.create({
        alignItems: 'center',
   },
   statusTextoBadge: {
-      color: '#050a24', // Cor escura para contraste
+      color: '#050a24',
       fontSize: 11,
       fontWeight: 'bold',
       textTransform: 'uppercase',
@@ -477,20 +456,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // --- Estilos de Modal ---
+  // Estilos de Modal
    modalFundo: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.7)',
-        padding: Platform.OS === 'ios' ? 20 : 0, // Padding para iOS evitar notch/dynamic island
+        padding: Platform.OS === 'ios' ? 20 : 0,
     },
     modalBox: {
         backgroundColor: '#1c2337',
         borderRadius: 16,
         padding: 20,
         width: '90%',
-        maxWidth: 400, // Largura máxima para tablets
+        maxWidth: 400,
     },
     modalTitulo: {
         color: '#fff',
@@ -499,7 +478,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 20,
     },
-    // Estilos de Resumo (reutilizados no modal)
     resumoLinha: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -524,52 +502,51 @@ const styles = StyleSheet.create({
         color: "orange",
     },
      botaoModalFechar: {
-         backgroundColor: "#373e4f", // Cor cinza para fechar
+         backgroundColor: "#373e4f",
          paddingVertical: 12,
          borderRadius: 10,
          alignItems: "center",
-         marginTop: 20, // Espaço acima do botão
+         marginTop: 20,
      },
-    // Estilos de Config (reutilizados no modal)
     label: {
-        color: "#AAB1C4", // Cinza claro para labels
+        color: "#AAB1C4",
         fontSize: 16,
         marginBottom: 8,
-        marginTop: 5, // Espacinho antes do input
+        marginTop: 5,
     },
      inputConfig: {
-        backgroundColor: "#373e4f", // Cinza escuro para inputs
+        backgroundColor: "#373e4f",
         borderRadius: 8,
         paddingHorizontal: 15,
         paddingVertical: 12,
         fontSize: 16,
-        color: "#ffffff", // Texto branco
+        color: "#ffffff",
         marginBottom: 10,
-        justifyContent: 'center', // Para alinhar texto no TouchableOpacity
+        justifyContent: 'center',
     },
      dataTexto: {
       color: "#fff",
-      fontSize: 15, // Um pouco menor talvez
+      fontSize: 15, 
     },
     botoesModalContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 20, // Espaço acima dos botões
-        gap: 10, // Espaço entre os botões
+        marginTop: 20,
+        gap: 10,
     },
     botaoModalAcao: {
-        flex: 1, // Faz os botões dividirem o espaço
+        flex: 1,
         paddingVertical: 12,
         borderRadius: 10,
         alignItems: 'center',
     },
     botaoCancelar: {
-        backgroundColor: "#373e4f", // Cinza para Cancelar
+        backgroundColor: "#373e4f",
     },
     botaoSalvarConfig: {
-        backgroundColor: "#0B49C1", // Azul para Salvar
+        backgroundColor: "#0B49C1",
     },
-    botaoTexto: { // Texto para botões de modal (Fechar, Salvar, Cancelar)
+    botaoTexto: {
         color: "#fff",
         fontSize: 16,
         fontWeight: "bold",
