@@ -9,9 +9,12 @@ import {
   Modal,
   FlatList,
   Dimensions,
+
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Importação Correta
 import { VeiculosContext } from "../components/VeiculosContext";
 import Texto from "../components/Texto";
+import { StatusBar } from "expo-status-bar";
 
 const { width } = Dimensions.get("window"); 
 const isTablet = width > 768;
@@ -68,7 +71,7 @@ export default function VeiculosScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoHome}
@@ -252,7 +255,7 @@ export default function VeiculosScreen({ navigation }) {
           <Texto style={styles.botaoTexto}>Adicionar Veículo</Texto>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -260,21 +263,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingHorizontal: isTablet ? 40 : 20,
-    paddingVertical: isTablet ? 50 : 30,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
-
   conteudo: {
     flex: 1,
     paddingBottom: 10,
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    position: "relative",
+    justifyContent: "space-between",
+    top: 15,
+    marginBottom: 30,
   },
 
   botaoHome: {
@@ -285,13 +286,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 3,
     zIndex: 1,
+    padding: 10,
   },
 
-  titulo: {
+ titulo: {
     color: "#FFF",
-    fontSize: isTablet ? 32 : 28,
+    fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
+    flex: 1,
   },
 
   imagemVoltar: {

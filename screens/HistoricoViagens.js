@@ -9,6 +9,7 @@ import {
   Image,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import Texto from "../components/Texto";
 import { getViagens } from "../database/database";
@@ -116,7 +117,7 @@ export default function HistoricoViagensScreen({ navigation }) {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
         <View style={styles.header}>
@@ -145,17 +146,19 @@ export default function HistoricoViagensScreen({ navigation }) {
           }
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: "#050a24",
+    },
     container: {
         flex: 1,
         backgroundColor: "#050a24",
         paddingHorizontal: 20,
-        paddingTop: 30,
-        paddingVertical: 50,
       },
       header: {
         flexDirection: 'row',

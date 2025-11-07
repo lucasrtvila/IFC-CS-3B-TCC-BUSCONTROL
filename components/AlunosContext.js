@@ -165,7 +165,7 @@ export function AlunosProvider({ children }) {
       );
 
       await carregarAlunosBase(); // Recarrega a lista base
-       Alert.alert("Sucesso", "Aluno adicionado!");
+       // Alert.alert("Sucesso", "Aluno adicionado!"); // Removido conforme solicitado
 
     } catch (e) {
       console.log("❌ Erro ao adicionar aluno (Context):", e);

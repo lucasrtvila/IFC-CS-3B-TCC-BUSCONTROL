@@ -12,6 +12,7 @@ import {
   Image,
   Modal,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Adicionado
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Texto from "../components/Texto";
 import { AlunosContext } from "../components/AlunosContext";
@@ -126,9 +127,9 @@ export default function MensalidadesScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  return (
-    <View style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
+  return (<>
+  <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       <View style={styles.container}>
          <View style={styles.headerNav}>
            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.botaoVoltar}>
@@ -274,8 +275,8 @@ export default function MensalidadesScreen({ navigation }) {
                 </TouchableOpacity>
             </TouchableOpacity>
         </Modal>
-
-    </View>
+    </SafeAreaView>
+    </>
   );
 }
 
@@ -283,18 +284,18 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingTop: 40, 
+    paddingTop: 10, 
   },
   container: {
     flex: 1,
     paddingHorizontal: 15,
-    paddingBottom: 10,
   },
    headerNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    top: 15,
+    marginBottom: 25,
     paddingHorizontal: 5,
   },
   botaoVoltar: {

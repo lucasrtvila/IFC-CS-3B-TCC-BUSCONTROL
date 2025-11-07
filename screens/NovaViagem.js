@@ -11,8 +11,9 @@ import {
   Alert,
   Platform,
   FlatList,
-  SafeAreaView,
+  // SafeAreaView, // Removido de 'react-native'
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Importado
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import Texto from "../components/Texto";
@@ -192,9 +193,8 @@ export default function NovaViagemScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <View style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <View style={styles.container}>
-            <Header style={styles.header} navigation={navigation} />
             <Texto style={styles.titulo}>Nova viagem</Texto>
 
             <View style={styles.content}>
@@ -365,14 +365,14 @@ export default function NovaViagemScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-      </View>
+      </SafeAreaView>
 
        <Modal
         visible={modalAlunosVisivel}
         animationType="slide"
         transparent
       >
-        <View style={styles.modalSafeArea}>
+        <SafeAreaView style={styles.modalSafeArea}>
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Alunos Presentes</Texto>
                 <FlatList
@@ -389,7 +389,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Concluir</Texto>
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       <Modal
@@ -397,7 +397,7 @@ export default function NovaViagemScreen({ navigation }) {
         animationType="slide"
         transparent
       >
-        <View style={styles.modalSafeArea}>
+        <SafeAreaView style={styles.modalSafeArea}>
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Selecionar Veículo</Texto>
                 <FlatList
@@ -426,7 +426,7 @@ export default function NovaViagemScreen({ navigation }) {
                 <Texto style={styles.botaoTexto}>Concluir</Texto>
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     </>
   );
@@ -436,7 +436,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingVertical: 30,
   },
   container: {
     flex: 1,
@@ -444,16 +443,11 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     justifyContent: "space-between",
   },
-  header: {
-    alignItems: "center",
-    top: -20,
-    marginBottom:-20,
-  },
   titulo: {
     fontSize: 28,
     color: "white",
     fontWeight: "bold",
-    marginVertical: 10,
+    marginVertical: 15,
     textAlign: "center",
   },
   content: {

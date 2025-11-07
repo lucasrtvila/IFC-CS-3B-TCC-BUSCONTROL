@@ -8,7 +8,9 @@ import {
   FlatList,
   Modal,
   Alert,
+  // SafeAreaView foi removido de 'react-native'
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Importação Correta
 import Texto from "../components/Texto";
 import Header from "../components/Header";
 import { ViagemContext } from "../components/ViagemContext";
@@ -345,9 +347,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <View style={styles.container}>
-        <Header navigation={navigation} />
-
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <View style={styles.content}>
           <Texto style={styles.titulo}>Viagem Ativa: {destino}</Texto>
 
@@ -419,7 +419,7 @@ export default function ViagemAtivaScreen({ route, navigation }) {
         </View>
 
         <Modal visible={modalAlunosVisivel} animationType="fade" transparent>
-          <View style={styles.modalFundo}>
+          <SafeAreaView style={styles.modalFundo}>
             <View style={styles.modalBox}>
               <Texto style={styles.modalTitulo}>
                 Confirmar Alunos em "{paradaSelecionadaNome}"
@@ -468,9 +468,9 @@ export default function ViagemAtivaScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </SafeAreaView>
         </Modal>
-      </View>
+      </SafeAreaView>
     </>
   );
 }
@@ -480,8 +480,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 20,
   },
   content: {
     flex: 1,
@@ -497,6 +495,8 @@ const styles = StyleSheet.create({
     borderColor: "#246BFD",
     paddingVertical: 8,
     borderRadius: 8,
+    top: 25,
+    marginBottom: 40,
   },
   metricasContainer: {
     flexDirection: "row",

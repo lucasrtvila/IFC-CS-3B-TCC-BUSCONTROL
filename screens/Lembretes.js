@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Adicionado
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LembretesContext } from "../components/LembretesContext";
 
@@ -142,7 +143,7 @@ export default function LembretesScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -279,7 +280,7 @@ export default function LembretesScreen({ navigation }) {
           </View>
         </Modal>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -288,8 +289,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050a24",
     paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingVertical: 30,
+    paddingVertical: 10,
   },
   conteudo: {
     flex: 1,
@@ -299,7 +299,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    top: 15,
+    marginBottom: 30,
   },
   botaoVoltar: {
     padding: 10,

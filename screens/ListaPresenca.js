@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Adicionado
 import Texto from "../components/Texto";
 import Header from "../components/Header";
 import { ViagemContext } from "../components/ViagemContext";
@@ -170,8 +171,7 @@ export default function ListaPresencaScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <View style={styles.container}>
-        <Header navigation={navigation} />
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <Texto style={styles.titulo}>Lista de Presença (Volta)</Texto>
         <Texto style={styles.subtitulo}>Selecione quem irá voltar:</Texto>
 
@@ -195,7 +195,7 @@ export default function ListaPresencaScreen({ navigation }) {
         >
           <Texto style={styles.botaoTexto}>Iniciar Volta ({alunosPresentesParaVolta.size})</Texto>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </>
   );
 }

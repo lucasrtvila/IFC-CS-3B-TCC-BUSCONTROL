@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useMemo } from "react";
 import {
   View,
   TouchableOpacity,
@@ -11,14 +11,16 @@ import {
   TextInput,
   Alert,
   Platform,
+  useWindowDimensions, // Importado
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Texto from "../components/Texto";
 import { ParadasContext } from "../components/ParadasContext";
 import BarraNavegacao from "../components/BarraNavegacao";
 import Header from "../components/Header";
 
-const { width } = Dimensions.get("window");
+// Removido: const { width } = Dimensions.get("window");
 
 export default function RotaScreen({ navigation }) {
   const {
@@ -26,22 +28,33 @@ export default function RotaScreen({ navigation }) {
     adicionarParada,
     editarParada,
     removerParada,
-    carregarDados,
+    // carregarDados, // [REMOVIDO DAQUI]
   } = useContext(ParadasContext);
 
+  // Lógica de dimensões agora está DENTRO do componente
+  const { width } = useWindowDimensions();
+  const styles = useMemo(() => getStyles(width), [width]);
+
+  // ... resto dos seus estados ...
   const [modalNovaParadaVisivel, setModalNovaParadaVisivel] = useState(false);
   const [nomeNovaParada, setNomeNovaParada] = useState("");
   const [horarioNovaParada, setHorarioNovaParada] = useState("");
   const [showTimePicker, setShowTimePicker] = useState(false);
-
-  const [modalEditarParadaVisivel, setModalEditarParadaVisivel] =useState(false);
+  const [modalEditarParadaVisivel, setModalEditarParadaVisivel] =
+    useState(false);
   const [paradaEditando, setParadaEditando] = useState(null);
   const [novoNome, setNovoNome] = useState("");
   const [novoHorario, setNovoHorario] = useState("");
 
+  // ... (Todas as suas funções: formatarHorario, etc.) ...
+  
+  /*
+  // [BLOCO REMOVIDO]
+  // O carregamento de dados foi movido para o ParadasContext
   useEffect(() => {
     carregarDados();
   }, []);
+  */
 
   const formatarHorario = (date) => {
     const hours = date.getHours().toString().padStart(2, "0");
@@ -74,7 +87,7 @@ export default function RotaScreen({ navigation }) {
       setParadaEditando(null);
       setNovoNome("");
       setNovoHorario("");
-      carregarDados();
+      // carregarDados(); // [REMOVIDO] O contexto deve atualizar a lista automaticamente
     } else {
       Alert.alert("Erro", "Por favor, preencha todos os campos.");
     }
@@ -111,12 +124,12 @@ export default function RotaScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <View style={styles.content}>
           <Header style={styles.header} navigation={navigation} />
           <Texto style={styles.titulo}>Rota</Texto>
           <FlatList
-            data={paradas}
+            data={paradas} // [PERMANECE] Vem direto do contexto já preenchido
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContainer}
@@ -134,6 +147,7 @@ export default function RotaScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* ... (Todos os seus modais permanecem os mesmos) ... */}
         <Modal
           visible={modalNovaParadaVisivel}
           animationType="slide"
@@ -205,7 +219,9 @@ export default function RotaScreen({ navigation }) {
                 style={styles.input}
                 onPress={() => setShowTimePicker(true)}
               >
-                <Texto style={{ color: "#fff" , fontWeight: 'bold', fontSize: 16}}>
+                <Texto
+                  style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}
+                >
                   {novoHorario || "Selecionar Horário"}
                 </Texto>
               </TouchableOpacity>
@@ -246,152 +262,151 @@ export default function RotaScreen({ navigation }) {
         </Modal>
 
         <BarraNavegacao navigation={navigation} abaAtiva="Rota" />
-      </View>
+      </SafeAreaView>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#050a24",
-    flex: 1,
-    paddingVertical: 30,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: width > 768 ? width * 0.1 : 16,
-  },
-  header: {
-    alignItems: "center",
-    top: -10,
-    marginBottom:-10
-  },
-  titulo: {
-    fontSize: width > 768 ? 24 : 20,
-    color: "white",
-    marginBottom: 30,
-    textAlign: "center",
-     fontWeight: "bold",
-     fontSize: 22,
-  },
-  listContainer: {
-    paddingBottom: 20,
-  },
-  infoCard: {
-    backgroundColor: "#1C2337",
-    borderRadius: 15,
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  cardLeft: {
-    flex: 1,
-  },
-  cardRight: {
-    alignItems: "flex-end",
-  },
-  cardTitle: {
-    color: "#AAB1C4",
-    fontSize: 14,
-  },
-  cardSubtitle: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-  cardTime: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-  botaoAdicionar: {
+// [ESTILOS PERMANECEM OS MESMOS]
+const getStyles = (width) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: "#050a24",
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: width > 768 ? width * 0.1 : 16, // Usa width
+    },
+    header: {
+      alignItems: "center",
+      top: 15,
+      marginBottom: 15,
+    },
+    titulo: {
+      fontSize: width > 768 ? 24 : 20, // Usa width
+      color: "white",
+      marginBottom: 30,
+      textAlign: "center",
+      fontWeight: "bold",
+    },
+    listContainer: {
+      paddingBottom: 20,
+    },
+    infoCard: {
+      backgroundColor: "#1C2337",
+      borderRadius: 15,
+      padding: 20,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 15,
+    },
+    cardLeft: {
+      flex: 1,
+    },
+    cardRight: {
+      alignItems: "flex-end",
+    },
+    cardTitle: {
+      color: "#AAB1C4",
+      fontSize: 14,
+    },
+    cardSubtitle: {
+      color: "white",
+      fontSize: 20,
+      fontWeight: "bold",
+      marginTop: 4,
+    },
+    cardTime: {
+      color: "white",
+      fontSize: 20,
+      fontWeight: "bold",
+      marginTop: 4,
+    },
+    botaoAdicionar: {
       backgroundColor: "#0B49C1",
-      paddingVertical: width > 768 ? 20 : 16,
+      paddingVertical: width > 768 ? 20 : 16, // Usa width
       borderRadius: 16,
       alignItems: "center",
       width: "100%",
       marginTop: 20,
-  },
-  botaoAdicionarTexto: {
-    color: "white",
-    fontSize: width > 768 ? 24 : 20,
-    fontWeight: "bold",
-  },
-  modalFundo: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000000aa",
-  },
-  modalBox: {
-    backgroundColor: "#1c2337",
-    padding: 20,
-    borderRadius: 16,
-    width: "90%",
-  },
-  modalTitulo: {
-    color: "#fff",
-    fontSize: 20,
-    marginBottom: 15,
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  input: {
-    backgroundColor: "#373e4f",
-    borderRadius: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: "#ffffff",
-    justifyContent: "center",
-  },
-  botoesModal: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-    gap: 10,
-  },
-  botaoCancelar: {
-    backgroundColor: "#373e4f",
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: "center",
-    flex: 1,
-  },
-  botaoModal: {
-    backgroundColor: "#0B49C1",
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: "center",
-    flex: 1,
-  },
-  botaoModalTexto: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  semParadasTexto: {
-    color: "#AAB1C4",
-    textAlign: "center",
-    marginTop: 50,
-  },
-  botaoExcluir: {
-    backgroundColor: "#c41628ff",
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  label: {
-    color: "#fff",
-    fontSize: 16,
-    marginBottom: 8,
-    marginTop: 10,
-  },
-  
-});
+    },
+    botaoAdicionarTexto: {
+      color: "white",
+      fontSize: width > 768 ? 24 : 20, // Usa width
+      fontWeight: "bold",
+    },
+    modalFundo: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "#000000aa",
+    },
+    modalBox: {
+      backgroundColor: "#1c2337",
+      padding: 20,
+      borderRadius: 16,
+      width: "90%",
+    },
+    modalTitulo: {
+      color: "#fff",
+      fontSize: 20,
+      marginBottom: 15,
+      textAlign: "center",
+      fontWeight: "bold",
+    },
+    input: {
+      backgroundColor: "#373e4f",
+      borderRadius: 16,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      marginBottom: 15,
+      fontSize: 16,
+      color: "#ffffff",
+      justifyContent: "center",
+    },
+    botoesModal: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 20,
+      gap: 10,
+    },
+    botaoCancelar: {
+      backgroundColor: "#373e4f",
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: "center",
+      flex: 1,
+    },
+    botaoModal: {
+      backgroundColor: "#0B49C1",
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: "center",
+      flex: 1,
+    },
+    botaoModalTexto: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    semParadasTexto: {
+      color: "#AAB1C4",
+      textAlign: "center",
+      marginTop: 50,
+    },
+    botaoExcluir: {
+      backgroundColor: "#c41628ff",
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: "center",
+      marginTop: 10,
+    },
+    label: {
+      color: "#fff",
+      fontSize: 16,
+      marginBottom: 8,
+      marginTop: 10,
+    },
+  });

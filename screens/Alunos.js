@@ -5,16 +5,17 @@ import {
   Modal,
   TextInput,
   StyleSheet,
-  FlatList,
+  FlatList, // Voltamos para FlatList
   Image,
   Dimensions,
   StatusBar,
   Linking,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // Importação correta
 import RNPickerSelect from "react-native-picker-select";
-import { useFocusEffect } from "@react-navigation/native";
-import * as Print from 'expo-print';
+// import { useFocusEffect } from "@react-navigation/native"; // [REMOVIDO]
+import * as Print from "expo-print";
 
 import Texto from "../components/Texto";
 import { AlunosContext } from "../components/AlunosContext";
@@ -31,13 +32,14 @@ export default function AlunosScreen({ navigation }) {
     editarAluno,
     removerAluno,
     paradas,
-    carregarAlunos: carregarAlunosComStatus,
-    carregarAlunosBase,
-    carregarParadas,
+    // carregarAlunos: carregarAlunosComStatus, // [REMOVIDO DAQUI]
+    // carregarAlunosBase, // [REMOVIDO DAQUI]
+    // carregarParadas, // [REMOVIDO DAQUI]
   } = useContext(AlunosContext);
 
+  // O estado agora é para a lista simples da FlatList
   const [alunosExibidos, setAlunosExibidos] = useState([]);
-  const [filtroAtivo, setFiltroAtivo] = useState(null);
+  const [filtroAtivo, setFiltroAtivo] = useState(null); // 'null', 'nome', 'pagos', 'parada'
 
   // Estados para modais e inputs
   const [nome, setNome] = useState("");
@@ -59,6 +61,9 @@ export default function AlunosScreen({ navigation }) {
   const [editDropdownVisivel, setEditDropdownVisivel] = useState(false);
   const [filtroDropdownVisivel, setFiltroDropdownVisivel] = useState(false);
 
+  /*
+  // [BLOCO REMOVIDO]
+  // O carregamento de dados foi movido para o AlunosContext
   useFocusEffect(
     React.useCallback(() => {
       carregarAlunosBase();
@@ -66,28 +71,55 @@ export default function AlunosScreen({ navigation }) {
       if (carregarParadas) carregarParadas();
     }, [])
   );
+  */
 
+  // Lógica principal para filtrar e ordenar os alunos para a FlatList
+  // [PERMANECE] Isso agora roda quando o *contexto* é atualizado
   useEffect(() => {
-    const alunosAtivosIds = new Set(alunosBase.map(a => a.id));
-    let alunosFiltrados = alunosComStatus.filter(aluno => 
-      alunosAtivosIds.has(aluno.id)
-    );
-    if (filtroAtivo === "nome") {
-      alunosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome));
-    } else if (filtroAtivo === "pagos") {
-      alunosFiltrados = alunosFiltrados.filter((a) => a.status === "Pago");
+    let alunosProcessados = [...alunosComStatus];
+
+    // 1. Aplica filtro (que reduz a lista)
+    if (filtroAtivo === "pagos") {
+      alunosProcessados = alunosProcessados.filter(
+        (a) => a.status === "Pago"
+      );
     }
-    
-    setAlunosExibidos(alunosFiltrados);
-    
-  }, [alunosComStatus, alunosBase, filtroAtivo]);
+
+    // 2. Aplica ordenação
+    if (filtroAtivo === "nome") {
+      // Ordenar por nome
+      alunosProcessados.sort((a, b) => a.nome.localeCompare(b.nome));
+    } else if (filtroAtivo === "parada") {
+      // Ordenar por parada
+      const paradasMap = new Map(paradas.map((p) => [p.id, p.nome]));
+
+      alunosProcessados.sort((a, b) => {
+        // Usa um prefixo para garantir que "Sem Parada" vá para o final
+        const nomeParadaA = paradasMap.get(a.paradaId) || "ZZZ_Sem Parada";
+        const nomeParadaB = paradasMap.get(b.paradaId) || "ZZZ_Sem Parada";
+
+        // Compara primeiro pelo nome da parada
+        if (nomeParadaA < nomeParadaB) return -1;
+        if (nomeParadaA > nomeParadaB) return 1;
+
+        // Se a parada for a mesma, ordena por nome do aluno
+        return a.nome.localeCompare(b.nome);
+      });
+    } else {
+      // Ordenação padrão (null ou "nome" que é o default)
+      alunosProcessados.sort((a, b) => a.nome.localeCompare(b.nome));
+    }
+
+    setAlunosExibidos(alunosProcessados);
+  }, [alunosComStatus, filtroAtivo, paradas]); // Depende de 'paradas' agora
 
   const limparFiltros = () => {
-    setFiltroAtivo(null);
+    setFiltroAtivo(null); // Volta para o padrão (nome A-Z)
     setFiltroDropdownVisivel(false);
   };
 
   const gerarPDF = async () => {
+    // Usa alunosBase para o PDF, pois geralmente queremos a lista completa
     const htmlContent = `
       <html>
         <head>
@@ -107,21 +139,20 @@ export default function AlunosScreen({ navigation }) {
                 <th>Nome</th>
                 <th>CPF</th>
                 <th>Telefone</th>
-                <th>Status</th>
                 <th>Parada</th>
               </tr>
             </thead>
             <tbody>
-              ${alunosExibidos
+              ${alunosBase // Usando alunosBase para a lista completa
                 .map(
                   (aluno) => `
                 <tr>
                   <td>${aluno.nome || ""}</td>
                   <td>${aluno.cpf || "Não informado"}</td>
                   <td>${aluno.telefone || "Não informado"}</td>
-                  <td>${aluno.status || ""}</td>
                   <td>${
-                    paradas.find((p) => p.id === aluno.paradaId)?.nome || "Não informada"
+                    paradas.find((p) => p.id === aluno.paradaId)?.nome ||
+                    "Não informada"
                   }</td>
                 </tr>
               `
@@ -182,7 +213,7 @@ export default function AlunosScreen({ navigation }) {
 
   const abrirEdicao = (aluno) => {
     setModalDetalhesVisivel(false);
-    setAlunoEditando(aluno.id); 
+    setAlunoEditando(aluno.id);
     setNovoNome(aluno.nome || "");
     setNovoCPF(aluno.cpf || "");
     setNovoTelefone(aluno.telefone || "");
@@ -201,7 +232,7 @@ export default function AlunosScreen({ navigation }) {
       Alert.alert("Erro", "CPF inválido! Digite 11 dígitos.");
       return;
     }
-    
+
     Alert.alert(
       "Confirmar Alterações",
       `Deseja salvar as alterações para ${novoNome.trim()}?`,
@@ -212,16 +243,36 @@ export default function AlunosScreen({ navigation }) {
           style: "default",
           onPress: () => {
             const indexEmAlunosComStatus = alunosComStatus.findIndex(
-              a => a.id === alunoEditando // alunoEditando é o ID
+              (a) => a.id === alunoEditando // alunoEditando é o ID
             );
 
             if (indexEmAlunosComStatus === -1) {
-                Alert.alert("Erro", "Não foi possível encontrar o aluno para editar. Tente novamente.");
+              // Fallback: Tenta encontrar na lista base se não estiver na lista de status
+              const indexBase = alunosBase.findIndex(
+                (a) => a.id === alunoEditando
+              );
+              if (indexBase === -1) {
+                Alert.alert(
+                  "Erro",
+                  "Não foi possível encontrar o aluno para editar. Tente novamente."
+                );
                 return;
+              }
+              // Se achou na base, usa esse index (embora seja menos comum)
+              editarAluno(
+                indexBase, // Usa o index da lista base
+                novoNome,
+                novoCPF,
+                novoStatus,
+                novoTelefone,
+                novoParadaId
+              );
+              setModalEditarVisivel(false);
+              return;
             }
 
             editarAluno(
-              indexEmAlunosComStatus,
+              indexEmAlunosComStatus, // Usa o index da lista com status
               novoNome,
               novoCPF,
               novoStatus,
@@ -244,7 +295,7 @@ export default function AlunosScreen({ navigation }) {
       Alert.alert("Erro", "CPF inválido! Digite 11 dígitos.");
       return;
     }
-    
+
     Alert.alert(
       "Confirmar Adição",
       `Deseja adicionar ${nome.trim()} à lista de alunos?`,
@@ -282,8 +333,49 @@ export default function AlunosScreen({ navigation }) {
     }
   };
 
+  // Renderiza o item (card do aluno)
+  const renderAlunoItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => abrirModalDetalhes(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.ladoEsquerdo}>
+        <Texto style={styles.nome}>{item.nome}</Texto>
+        <Texto style={styles.parada}>
+          Parada:{" "}
+          {paradas.find((p) => p.id === item.paradaId)?.nome || "N/A"}
+        </Texto>
+      </View>
+      <View style={styles.ladoDireito}>
+        <Texto
+          style={item.status === "Pago" ? styles.pago : styles.naoPago}
+        >
+          {item.status}
+        </Texto>
+
+        {item.telefone && (
+          <TouchableOpacity
+            style={styles.botaoWhatsapp}
+            onPress={(e) => {
+              e.stopPropagation(); // Impede que o clique abra o modal de detalhes
+              abrirWhatsApp(item.telefone);
+            }}
+          >
+            <Image
+              source={require("../assets/whatsapp.png")}
+              style={styles.iconeWhatsapp}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.safeArea}>
+    <>
+  <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
         <View style={styles.content}>
@@ -302,51 +394,17 @@ export default function AlunosScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          {/* Alterado de volta para FlatList */}
           <FlatList
             data={alunosExibidos}
             keyExtractor={(item) => String(item.id)}
+            renderItem={renderAlunoItem}
             style={styles.lista}
             ListEmptyComponent={
               <Texto style={styles.semAlunosTexto}>
-                Nenhum aluno cadastrado.
+                Nenhum aluno encontrado.
               </Texto>
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => abrirModalDetalhes(item)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.ladoEsquerdo}>
-                  <Texto style={styles.nome}>{item.nome}</Texto>
-                  <Texto style={styles.parada}>
-                    Parada:{" "}
-                    {paradas.find((p) => p.id === item.paradaId)?.nome || "N/A"}
-                  </Texto>
-                </View>
-                <View style={styles.ladoDireito}>
-                  <Texto
-                    style={
-                      item.status === "Pago" ? styles.pago : styles.naoPago
-                    }
-                  >
-                    {item.status}
-                  </Texto>
-
-                  {item.telefone && (
-                    <TouchableOpacity
-                      style={styles.botaoWhatsapp}
-                      onPress={() => abrirWhatsApp(item.telefone)}
-                    >
-                      <Image
-                        source={require("../assets/whatsapp.png")}
-                        style={styles.iconeWhatsapp}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
             contentContainerStyle={{ paddingBottom: 20 }}
           />
 
@@ -374,10 +432,25 @@ export default function AlunosScreen({ navigation }) {
           onPressOut={() => setFiltroDropdownVisivel(false)}
         >
           <View style={styles.modalFiltroBox}>
+            {/* Botão Novo Filtro */}
             <TouchableOpacity
               style={[
                 styles.opcaoFiltro,
-                filtroAtivo === "nome" && styles.filtroAtivo,
+                filtroAtivo === "parada" && styles.filtroAtivo,
+              ]}
+              onPress={() => {
+                setFiltroAtivo("parada");
+                setFiltroDropdownVisivel(false);
+              }}
+            >
+              <Texto style={styles.opcaoTexto}>Ordenar por Parada</Texto>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.opcaoFiltro,
+                (filtroAtivo === "nome" || filtroAtivo === null) &&
+                  styles.filtroAtivo,
               ]}
               onPress={() => {
                 setFiltroAtivo("nome");
@@ -386,6 +459,7 @@ export default function AlunosScreen({ navigation }) {
             >
               <Texto style={styles.opcaoTexto}>Ordenar por Nome (A-Z)</Texto>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[
                 styles.opcaoFiltro,
@@ -398,6 +472,7 @@ export default function AlunosScreen({ navigation }) {
             >
               <Texto style={styles.opcaoTexto}>Mostrar Apenas Pagos</Texto>
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.opcaoFiltro} onPress={limparFiltros}>
               <Texto style={styles.opcaoTexto}>Limpar Filtros</Texto>
             </TouchableOpacity>
@@ -607,7 +682,8 @@ export default function AlunosScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
+    </>
   );
 }
 
@@ -615,8 +691,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingTop: 30,
-    paddingVertical: 30,
   },
   container: {
     flex: 1,
@@ -628,8 +702,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: -10,
-    marginBottom: 5,
+    top: 15,
+    marginBottom: 15,
   },
   titulo: {
     fontSize: width > 768 ? 28 : 24,
@@ -659,10 +733,11 @@ const styles = StyleSheet.create({
   lista: {
     flex: 1,
   },
+  // Estilo de cabeçalho de seção removido
   card: {
     backgroundColor: "#1c2337",
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 15, // Aumentei um pouco a margem para separar melhor
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 15,
@@ -676,7 +751,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-
   nome: {
     color: "white",
     fontSize: 18,
@@ -831,7 +905,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
     position: "absolute",
-    top: 130,
+    top: 130, // Ajuste conforme necessário
     right: 16,
     width: 250,
   },

@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Texto from "../components/Texto";
 import { resetDatabase, getUsuario, setUsuario } from "../database/database";
 
@@ -91,7 +92,7 @@ export default function ConfiguracoesScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -155,7 +156,7 @@ export default function ConfiguracoesScreen({ navigation }) {
             </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -163,11 +164,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050a24",
-    paddingTop: 40,
+    paddingTop: 0, // Removido paddingTop 40
   },
   header: {
     paddingVertical: 10,
     paddingHorizontal: 10,
+    top: 15,
+    marginBottom: 15,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

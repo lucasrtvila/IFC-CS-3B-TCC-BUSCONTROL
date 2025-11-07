@@ -1,15 +1,16 @@
-import React, { useContext, useState, useEffect, use } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert, // Mantido caso necessário
+  Alert,
   Dimensions,
   StatusBar,
-  Platform, // Mantido caso necessário
+  Platform,
 } from "react-native";
 import * as Location from "expo-location";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
 import { ViagemContext } from "../components/ViagemContext";
@@ -31,18 +32,25 @@ function formatarData(data) {
 }
 
 export default function Inicial({ navigation }) {
-  const [usuario, setUsuario] = useState(null);
-  const [localizacao, setLocalizacao] = useState("Buscando...");
+  // [1] Estado de saudação (rápido, síncrono)
   const [saudacao, setSaudacao] = useState("");
-  const [valorMensalidadeExibido, setValorMensalidadeExibido] = useState("0");
-  const [dataVencimentoExibida, setDataVencimentoExibida] = useState(new Date());
 
+  // [2] Combinar estados que carregam assincronamente
+  const [dadosTela, setDadosTela] = useState({
+    usuario: null,
+    localizacao: "Buscando...",
+    valorMensalidade: "0",
+    dataVencimento: new Date(),
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
+  // [3] Contextos (já são gerenciados pelos providers)
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
   const { viagemDeVoltaPendente } = useContext(ViagemContext);
-  const {valorMensalidade, dataVencimento} = useContext(AlunosContext);
+  const { valorMensalidade, dataVencimento } = useContext(AlunosContext);
 
+  // [4] useEffect para saudação (rápido, pode ficar separado)
   useEffect(() => {
     const hora = new Date().getHours();
     if (hora >= 5 && hora < 12) setSaudacao("Bom dia, ");
@@ -50,75 +58,105 @@ export default function Inicial({ navigation }) {
     else setSaudacao("Boa noite, ");
   }, []);
 
+  // [5] NOVO useEffect combinado para carregar dados do banco e localização
   useEffect(() => {
-    async function carregarDados() {
+    async function carregarTodosDados() {
+      setIsLoading(true);
       try {
-        const usuarioDB = await getUsuario();
-        setUsuario(usuarioDB);
+        // 1. Pedir permissão de localização
+        const { status } = await Location.requestForegroundPermissionsAsync();
 
-        const mensalidadeBanco = await getMensalidade();
-        if (mensalidadeBanco) {
-          setValorMensalidadeExibido(mensalidadeBanco.valor.toFixed(2));
-          const parts = mensalidadeBanco.dataVencimento.split('-');
-          if (parts.length === 3) {
-              setDataVencimentoExibida(new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
-          } else {
-               setDataVencimentoExibida(new Date());
-          }
+        // 2. Iniciar buscas assíncronas
+        const promessas = [getUsuario(), getMensalidade()];
+
+        if (status === "granted") {
+          promessas.push(Location.getCurrentPositionAsync({}));
         } else {
-            setValorMensalidadeExibido("380.00"); // Valor padrão
-            setDataVencimentoExibida(new Date()); // Data Padrão
+          promessas.push(Promise.resolve(null)); // Adiciona null se não houver permissão
         }
+
+        // 3. Aguardar todas as buscas
+        const [usuarioDB, mensalidadeBanco, location] = await Promise.all(
+          promessas
+        );
+
+        // 4. Processar resultados
+        let locFormatada = "Permissão negada";
+        if (location) {
+          try {
+            const [address] = await Location.reverseGeocodeAsync(location.coords);
+            if (address) {
+              const cidade =
+                address.city || address.subregion || "Cidade desconhecida";
+              const estado = address.region || "";
+              locFormatada = `${cidade} - ${estado}`;
+            } else {
+              locFormatada = "Local não encontrado";
+            }
+          } catch (geoError) {
+             locFormatada = "Erro ao geocodificar";
+          }
+        }
+
+        let valMensalidade = "380.00";
+        let dataVenc = new Date();
+        if (mensalidadeBanco) {
+          valMensalidade = mensalidadeBanco.valor.toFixed(2);
+          const parts = mensalidadeBanco.dataVencimento.split("-");
+          if (parts.length === 3) {
+            dataVenc = new Date(
+              parseInt(parts[0], 10),
+              parseInt(parts[1], 10) - 1,
+              parseInt(parts[2], 10)
+            );
+          }
+        }
+
+        // 5. Atualizar o estado UMA ÚNICA VEZ
+        setDadosTela({
+          usuario: usuarioDB,
+          localizacao: locFormatada,
+          valorMensalidade: valMensalidade,
+          dataVencimento: dataVenc,
+        });
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
+        setDadosTela((prev) => ({
+          ...prev,
+          localizacao: "Erro ao obter dados",
+        }));
+      } finally {
+        setIsLoading(false);
       }
     }
-    carregarDados();
+    carregarTodosDados();
   }, []);
 
+  // [6] useEffects que dependem de CONTEXTO (permanecem)
+  // Eles atualizam o estado se o valor do *contexto* mudar
   useEffect(() => {
     if (valorMensalidade != null) {
-      setValorMensalidadeExibido(parseFloat(valorMensalidade).toFixed(2));
+      setDadosTela((prev) => ({
+        ...prev,
+        valorMensalidade: parseFloat(valorMensalidade).toFixed(2),
+      }));
     }
   }, [valorMensalidade]);
 
   useEffect(() => {
     if (dataVencimento) {
-      setDataVencimentoExibida(new Date(dataVencimento));
+      setDadosTela((prev) => ({
+        ...prev,
+        dataVencimento: new Date(dataVencimento),
+      }));
     }
   }, [dataVencimento]);
 
-  useEffect(() => {
-    const obterLocalizacao = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setLocalizacao("Permissão negada");
-          return;
-        }
+  // [Os useEffects antigos 'carregarDados' e 'obterLocalizacao' foram removidos]
 
-        const location = await Location.getCurrentPositionAsync({});
-        const [address] = await Location.reverseGeocodeAsync(location.coords);
-
-        if (address) {
-          const cidade =
-            address.city || address.subregion || "Cidade desconhecida";
-          const estado = address.region || "";
-          setLocalizacao(`${cidade} - ${estado}`);
-        } else {
-          setLocalizacao("Local não encontrado");
-        }
-      } catch (error) {
-        setLocalizacao("Erro ao obter localização");
-      }
-    };
-    obterLocalizacao();
-  }, []);
-
-   const navegarParaMensalidades = () => {
-      navigation.navigate("Mensalidades");
-   };
-
+  const navegarParaMensalidades = () => {
+    navigation.navigate("Mensalidades");
+  };
 
   const handleBotaoPrincipal = () => {
     if (viagemDeVoltaPendente) {
@@ -131,19 +169,24 @@ export default function Inicial({ navigation }) {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
-      <View style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <View style={styles.container}>
           <Header style={styles.header} navigation={navigation} />
+          {/* [7] Usar os novos estados 'dadosTela' */}
           <Texto style={styles.boasVindas}>
             {saudacao}
-            <Texto style={styles.nome}>{usuario?.nome || "Usuário"}</Texto>
+            <Texto style={styles.nome}>
+              {dadosTela.usuario?.nome || "Usuário"}
+            </Texto>
           </Texto>
 
           <View style={styles.cardsContainer}>
             <TouchableOpacity style={styles.card}>
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Você está em</Texto>
-                <Texto style={styles.cardTextBold}>{localizacao}</Texto>
+                <Texto style={styles.cardTextBold}>
+                  {dadosTela.localizacao}
+                </Texto>
               </View>
             </TouchableOpacity>
 
@@ -154,10 +197,12 @@ export default function Inicial({ navigation }) {
               <View style={styles.cardCenterContent}>
                 <Texto style={styles.cardTitle}>Mensalidades</Texto>
                 <Texto style={styles.cardTextBold}>
-                  Valor atual: R$ {valorMensalidadeExibido}
+                  Valor atual: R$ {dadosTela.valorMensalidade}
                 </Texto>
-                 <Texto style={styles.cardSub}>Vencimento: {formatarData(dataVencimentoExibida)}</Texto>
-                 <Texto style={styles.cardSub}>Toque para gerenciar</Texto>
+                <Texto style={styles.cardSub}>
+                  Vencimento: {formatarData(dadosTela.dataVencimento)}
+                </Texto>
+                <Texto style={styles.cardSub}>Toque para gerenciar</Texto>
               </View>
             </TouchableOpacity>
           </View>
@@ -224,22 +269,21 @@ export default function Inicial({ navigation }) {
           </TouchableOpacity>
         </View>
 
-
         <BarraNavegacao navigation={navigation} abaAtiva="Inicial" />
-      </View>
+      </SafeAreaView>
     </>
   );
 }
 
+// [Os estilos permanecem os mesmos]
 const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
       backgroundColor: "#050a24",
-      paddingTop: 30,
-      paddingVertical: 30,
     },
     header: {
-      top: -10,
+      top: 15,
+      marginBottom: 15,
     },
     container: {
       flex: 1,

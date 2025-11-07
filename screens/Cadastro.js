@@ -8,6 +8,7 @@ import {
   Image,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Texto from "../components/Texto";
 import { setUsuario } from "../database/database";
  
@@ -20,7 +21,7 @@ export default function CadastroScreen({ navigation }) {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E21" />
       <View style={styles.container}>
         <Image
@@ -47,10 +48,14 @@ export default function CadastroScreen({ navigation }) {
 
         </View>
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#050a24",
+  },
   container: {
     flex: 1,
     backgroundColor: "#050a24",
