@@ -53,7 +53,7 @@ export default function LembretesScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [editarIndex, setEditarIndex] = useState(null);
   const [tituloInput, setTituloInput] = useState("");
-  
+
   // Estados para os PICKERS (Date Objects)
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
@@ -84,7 +84,7 @@ export default function LembretesScreen({ navigation }) {
       setTituloInput("");
       const hoje = new Date();
       // Inicializa os pickers com a data/hora atual
-      setDataSelecionada(hoje); 
+      setDataSelecionada(hoje);
       setHoraSelecionada(hoje);
       // Inicia campos de texto vazios
       setDataInput("");
@@ -109,7 +109,10 @@ export default function LembretesScreen({ navigation }) {
 
     // Verifica se a data/hora está no passado
     if (triggerDate < new Date()) {
-      Alert.alert("Data Inválida", "O lembrete não pode ser agendado no passado.");
+      Alert.alert(
+        "Data Inválida",
+        "O lembrete não pode ser agendado no passado."
+      );
       return;
     }
 
@@ -143,7 +146,7 @@ export default function LembretesScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -256,11 +259,11 @@ export default function LembretesScreen({ navigation }) {
                   value={horaSelecionada}
                   mode="time"
                   is24Hour={true}
-                  display="spinner"
+                  // Esta linha força o seletor digital (de rolo)
+                  display="spinner" 
                   onChange={aoSelecionarHora}
                 />
               )}
-
               <View style={styles.modalBotoes}>
                 <TouchableOpacity
                   style={[styles.botaoModal, styles.botaoCancelar]}
