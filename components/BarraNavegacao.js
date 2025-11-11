@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   abaIcon: {
-    width: 27,
-    height: 27,
+    width: 35,
+    height: 35,
     resizeMode: "contain",
   },
   abaText: {

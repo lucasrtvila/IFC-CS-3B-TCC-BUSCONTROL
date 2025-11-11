@@ -46,6 +46,7 @@ export default function NovaViagemScreen({ navigation }) {
   const { alunos } = useContext(AlunosContext);
   const { paradas } = useContext(ParadasContext);
   const { limparTemplate } = useContext(ViagemContext);
+  const [alunosAtivos, setAlunosAtivos] = useState([]);
 
   const [tipoViagem, setTipoViagem] = useState("ida_e_volta");
   const [inicio, setInicio] = useState(new Date());
@@ -64,6 +65,11 @@ export default function NovaViagemScreen({ navigation }) {
   const [modalVeiculosVisivel, setModalVeiculosVisivel] = useState(false);
 
   const [lastTripData, setLastTripData] = useState(null); 
+
+  useEffect(() => {
+  const filtrados = alunos.filter(aluno => aluno.statusAtivo === 1);
+  setAlunosAtivos(filtrados);
+}, [alunos]);
 
   useEffect(() => {
     const buscarUltimaViagem = async () => {
@@ -376,7 +382,7 @@ export default function NovaViagemScreen({ navigation }) {
             <View style={styles.modalBox}>
                 <Texto style={styles.modalTitulo}>Alunos Presentes</Texto>
                 <FlatList
-                data={alunos}
+                data={alunosAtivos}
                 renderItem={renderAlunoItem}
                 keyExtractor={(item) => item.id.toString()}
                 style={styles.alunosList}

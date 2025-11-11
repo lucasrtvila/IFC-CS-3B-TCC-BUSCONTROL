@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+
 import { VeiculosContext } from "../components/VeiculosContext";
 import { LembretesContext } from "../components/LembretesContext";
 import { ViagemContext } from "../components/ViagemContext";
@@ -48,8 +50,17 @@ export default function Inicial({ navigation }) {
   const { veiculos } = useContext(VeiculosContext);
   const { lembretes } = useContext(LembretesContext);
   const { viagemDeVoltaPendente } = useContext(ViagemContext);
-  const { valorMensalidade, dataVencimento } = useContext(AlunosContext);
+  const { valorMensalidade, dataVencimento, resetMesParaAtual } = useContext(AlunosContext);
 
+  useFocusEffect(
+    useCallback(() => {
+      // Chama a função do contexto para recalcular e definir o mês atual
+      if (resetMesParaAtual) {
+        resetMesParaAtual();
+      }
+    }, [resetMesParaAtual]) // A dependência é a própria função
+  );
+  
   // [4] useEffect para saudação (rápido, pode ficar separado)
   useEffect(() => {
     const hora = new Date().getHours();

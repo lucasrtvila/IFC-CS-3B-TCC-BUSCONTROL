@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BusControl",
-    "slug": "snack-f1f93eb7-97f9-45c2-b31f-7489eadc72ad",
+    "slug": "Bus Control",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icone.png",
@@ -24,10 +24,10 @@
     "web": {},
     "extra": {
       "eas": {
-        "projectId": "dc4432c9-f128-4f7d-a14f-ea629a27f3d3"
+        "projectId": "e4cf939a-44f4-4178-a649-49cfb1e0f815"
       }
     },
-    "owner": "capibaracocosine",
+    "owner": "miltonleigo",
     "plugins": [
       "expo-sqlite",
       "expo-font",

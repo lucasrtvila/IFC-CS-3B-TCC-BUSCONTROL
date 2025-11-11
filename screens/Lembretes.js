@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconeVoltar: {
-    width: 27,
-    height: 27,
+    width: 38,
+    height: 38,
     resizeMode: "contain",
   },
   lista: {

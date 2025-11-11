@@ -300,12 +300,13 @@ const styles = StyleSheet.create({
   },
   botaoVoltar: {
      padding: 5,
-     width: 28,
+     marginRight: 5,
+     width: 35,
      alignItems: 'flex-start'
   },
   iconeVoltar: {
-      width: 28,
-      height: 28,
+      width: 35,
+      height: 35,
       resizeMode: 'contain',
   },
    botaoHeaderIcone: {
@@ -316,6 +317,7 @@ const styles = StyleSheet.create({
    iconeHeader: {
        width: 26,
        height: 26,
+       marginRight: -5,
        resizeMode: 'contain',
        tintColor: '#AAB1C4'
    },

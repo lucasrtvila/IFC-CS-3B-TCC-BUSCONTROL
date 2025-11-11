@@ -20,15 +20,13 @@ import { ParadasContext } from "../components/ParadasContext";
 import BarraNavegacao from "../components/BarraNavegacao";
 import Header from "../components/Header";
 
-// Removido: const { width } = Dimensions.get("window");
 
 export default function RotaScreen({ navigation }) {
   const {
     paradas,
     adicionarParada,
     editarParada,
-    removerParada,
-    // carregarDados, // [REMOVIDO DAQUI]
+    removerParada,  
   } = useContext(ParadasContext);
 
   // Lógica de dimensões agora está DENTRO do componente
@@ -46,15 +44,6 @@ export default function RotaScreen({ navigation }) {
   const [novoNome, setNovoNome] = useState("");
   const [novoHorario, setNovoHorario] = useState("");
 
-  // ... (Todas as suas funções: formatarHorario, etc.) ...
-  
-  /*
-  // [BLOCO REMOVIDO]
-  // O carregamento de dados foi movido para o ParadasContext
-  useEffect(() => {
-    carregarDados();
-  }, []);
-  */
 
   const formatarHorario = (date) => {
     const hours = date.getHours().toString().padStart(2, "0");

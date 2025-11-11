@@ -298,8 +298,8 @@ const styles = StyleSheet.create({
   },
 
   imagemVoltar: {
-    width: 27,
-    height: 27,
+    width: 38,
+    height: 38,
     resizeMode: "contain",
   },
 

@@ -432,8 +432,6 @@ export async function registrarOuAtualizarStatusPagamento(aluno_id, mes_ano, sta
     });
 }
 
-// --- ATUALIZADO: getAlunosComStatusParaMes ---
-// Implementa Regra 1 (persistência) e Regra 2 (novos alunos)
 export async function getAlunosComStatusParaMes(mes_ano) {
     return queueOperation(async () => {
         const database = await getDB();
@@ -445,8 +443,9 @@ export async function getAlunosComStatusParaMes(mes_ano) {
         // Regra 1: Mostrar alunos ativos (statusAtivo = 1) que foram cadastrados ANTES ou NO mês visualizado (strftime(...) <= mes_ano).
         // Regra 2: Mostrar alunos inativos (statusAtivo = 0) APENAS SE eles tiverem um registro de pagamento (hp.mes_ano = mes_ano) nesse mês específico.
         const query = `
-            SELECT
+           SELECT
                 a.id, a.nome, a.cpf, a.telefone, a.paradaId, a.horario,
+                a.statusAtivo, 
                 COALESCE(hp.status, 'Não Pago') as status
             FROM alunos a
             LEFT JOIN historico_pagamentos hp ON a.id = hp.aluno_id AND hp.mes_ano = ?

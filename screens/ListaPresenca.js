@@ -23,6 +23,9 @@ export default function ListaPresencaScreen({ navigation }) {
   const { viagemTemplate, limparTemplate } = useContext(ViagemContext);
   const { alunos: todosAlunos } = useContext(AlunosContext);
   const { paradas } = useContext(ParadasContext);
+  const alunosAtivos = useMemo(() => {
+    return todosAlunos.filter(aluno => aluno.statusAtivo === 1);
+  }, [todosAlunos]);
 
   const alunosDaIdaIds = useMemo(
     () => new Set(viagemTemplate?.alunosSelecionadosIds || []),
@@ -33,7 +36,7 @@ export default function ListaPresencaScreen({ navigation }) {
     const alunosQueForam = [];
     const outrosAlunos = [];
 
-    todosAlunos.forEach(aluno => {
+    alunosAtivos.forEach(aluno => {
       if (alunosDaIdaIds.has(aluno.id)) {
         alunosQueForam.push(aluno);
       } else {
@@ -56,7 +59,7 @@ export default function ListaPresencaScreen({ navigation }) {
      }
 
     return sections;
-  }, [todosAlunos, alunosDaIdaIds]);
+  }, [alunosAtivos, alunosDaIdaIds]);
 
   const [alunosPresentesParaVolta, setAlunosPresentesParaVolta] = useState(() => new Set());
 
@@ -79,7 +82,7 @@ export default function ListaPresencaScreen({ navigation }) {
       return;
     }
 
-    const alunosQueVoltam = todosAlunos.filter((aluno) =>
+    const alunosQueVoltam = alunosAtivos.filter((aluno) =>
       alunosPresentesParaVolta.has(aluno.id)
     );
 

@@ -61,22 +61,10 @@ export default function AlunosScreen({ navigation }) {
   const [editDropdownVisivel, setEditDropdownVisivel] = useState(false);
   const [filtroDropdownVisivel, setFiltroDropdownVisivel] = useState(false);
 
-  /*
-  // [BLOCO REMOVIDO]
-  // O carregamento de dados foi movido para o AlunosContext
-  useFocusEffect(
-    React.useCallback(() => {
-      carregarAlunosBase();
-      carregarAlunosComStatus();
-      if (carregarParadas) carregarParadas();
-    }, [])
-  );
-  */
 
-  // Lógica principal para filtrar e ordenar os alunos para a FlatList
-  // [PERMANECE] Isso agora roda quando o *contexto* é atualizado
+
   useEffect(() => {
-    let alunosProcessados = [...alunosComStatus];
+    let alunosProcessados = alunosComStatus.filter(a => a.statusAtivo === 1);
 
     // 1. Aplica filtro (que reduz a lista)
     if (filtroAtivo === "pagos") {
